@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EMotorad Sales Dashboard v2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d1a;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px}
+
+/* ── TOP BAR ── */
+.fbar{position:sticky;top:0;z-index:100;background:#0a1628;border-bottom:1px solid #1e3a5f;padding:10px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.fbar-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.fsep{color:#1e3a5f;font-size:16px;margin:0 2px}
+
+/* Channel tabs */
+.chtabs{display:flex;border:1px solid #1e3a5f;border-radius:7px;overflow:hidden}
+.cht{padding:6px 14px;border:none;background:transparent;color:#64748b;cursor:pointer;font-size:12px;font-weight:700;transition:all .15s}
+.cht.active{background:#1e3a5f;color:#60a5fa}
+.cht:hover:not(.active){background:#0d1a2e;color:#94a3b8}
+
+/* Dropdowns */
+select{background:#0d1a2e;color:#cbd5e1;border:1px solid #334155;border-radius:6px;padding:5px 8px;font-size:12px;outline:none;cursor:pointer}
+select:focus{border-color:#3b82f6}
+
+/* Reset button */
+.btn-reset{background:transparent;border:1px solid #334155;color:#94a3b8;padding:5px 11px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700}
+.btn-reset:hover{border-color:#60a5fa;color:#60a5fa}
+
+/* Update button */
+.upd{margin-left:auto;background:#1e40af;color:#bfdbfe;border:none;padding:7px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px;transition:background .15s}
+.upd:hover{background:#2563eb}.upd:disabled{background:#1e293b;color:#475569;cursor:not-allowed}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 1s linear infinite}
+
+/* ── CONTENT ── */
+.con{padding:14px 18px;max-width:1600px;margin:0 auto}
+.dh{margin-bottom:14px}
+.dt{font-size:18px;font-weight:800;color:#f1f5f9;display:flex;align-items:center;gap:8px}
+.badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:#14532d;color:#4ade80;display:inline-flex;align-items:center;gap:4px}
+.dot{width:6px;height:6px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite}
+.dm{font-size:11px;color:#475569;margin-top:3px}
+
+/* ── KPI CARDS ── */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.kpi{background:#0f1f3a;border:1px solid #1e3a5f;border-radius:10px;padding:14px 16px}
+.kl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;font-weight:700}
+.kv{font-size:22px;font-weight:800;color:#f8fafc}
+.ks{font-size:10px;color:#475569;margin-top:3px}
+
+/* ── GRID ROWS ── */
+.row{display:grid;gap:11px;margin-bottom:11px}
+.r21{grid-template-columns:1fr 340px}
+.r3{grid-template-columns:1fr 1fr 1fr}
+.r2{grid-template-columns:1fr 1fr}
+.r1{grid-template-columns:1fr}
+
+/* ── CARDS ── */
+.card{background:#0f1f3a;border:1px solid #1e3a5f;border-radius:10px;padding:14px;min-width:0}
+
+/* ── CARD HEADERS (larger, bold, white) ── */
+.chdr{font-size:13px;font-weight:800;color:#f1f5f9;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.chdr-sub{font-size:10px;font-weight:400;color:#475569;text-transform:none;letter-spacing:0}
+
+/* ── MINI TOGGLES ── */
+.mt{display:flex;gap:2px}
+.mtb{padding:3px 9px;border-radius:4px;border:1px solid #334155;background:transparent;color:#64748b;font-size:10px;cursor:pointer;font-weight:700;transition:all .12s}
+.mtb.active{border-color:#3b82f6;background:#1e3a5f;color:#60a5fa}
+.mtb:hover:not(.active){border-color:#475569;color:#94a3b8}
+
+/* ── CHARTS ── */
+.cw{position:relative}
+.h200{height:200px}.h240{height:240px}.h280{height:280px}.h300{height:300px}.h320{height:320px}
+
+/* ── CHANNEL TABLE ── */
+.dt2{width:100%;border-collapse:collapse;font-size:12px}
+.dt2 th{color:#64748b;font-weight:700;text-align:left;padding:5px 8px;border-bottom:1px solid #1e293b;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.dt2 td{padding:6px 8px;border-bottom:1px solid #0a1628;color:#cbd5e1}
+.dt2 tr:last-child td{border-bottom:none}
+.dt2 td:not(:first-child){text-align:right}
+.bw{width:80px;display:inline-block;vertical-align:middle}
+.bb{height:5px;border-radius:2px;background:#1e293b}
+
+/* ── MATERIAL MARGIN TABLE ── */
+.mm-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.mm-tbl th{color:#64748b;font-weight:700;text-align:right;padding:6px 10px;border-bottom:2px solid #1e293b;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.mm-tbl th:first-child{text-align:left}
+.mm-tbl td{padding:7px 10px;border-bottom:1px solid #0a1628;color:#cbd5e1;text-align:right}
+.mm-tbl td:first-child{text-align:left;font-weight:600}
+.mm-tbl tr:hover td{background:#111827}
+.mm-tbl .total-row td{border-top:2px solid #334155;font-weight:800;color:#f1f5f9}
+.mm-pos{color:#4ade80}
+.mm-neg{color:#f87171}
+
+/* ── PERIOD DETAIL TABLES ── */
+.tscroll{overflow-x:auto;max-height:340px;overflow-y:auto}
+.ptbl{border-collapse:collapse;font-size:11px;white-space:nowrap}
+.ptbl th{position:sticky;top:0;background:#0a1628;color:#64748b;font-weight:700;text-align:right;padding:6px 8px;border-bottom:2px solid #1e293b;font-size:10px;text-transform:uppercase;z-index:1;letter-spacing:.04em}
+.ptbl th:first-child{text-align:left}
+.ptbl td{padding:5px 8px;border-bottom:1px solid #0a1628;color:#cbd5e1;text-align:right}
+.ptbl td:first-child{text-align:left;color:#94a3b8;font-weight:600}
+.ptbl tr:hover td{background:#111827}
+
+/* ── SECTION LABEL ── */
+.pd-label{font-size:13px;font-weight:800;color:#f1f5f9;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+
+@media(max-width:1100px){.r21,.r3{grid-template-columns:1fr 1fr}.r2{grid-template-columns:1fr}}
+@media(max-width:700px){.r21,.r3,.r2{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════ TOP BAR ══════════════════════════ -->
+<div class="fbar">
+  <!-- Channel filter -->
+  <div class="fbar-group">
+    <div class="chtabs">
+      <button class="cht active" data-ch="all"     onclick="setChan(this)">All</button>
+      <button class="cht"        data-ch="Online"  onclick="setChan(this)">Online</button>
+      <button class="cht"        data-ch="Offline" onclick="setChan(this)">Offline</button>
+      <button class="cht"        data-ch="B2B"     onclick="setChan(this)">B2B</button>
+    </div>
+  </div>
+
+  <span class="fsep">|</span>
+
+  <!-- SKU filter -->
+  <div class="fbar-group">
+    <select id="sku-sel" onchange="setSKU()"><option value="">All SKUs</option></select>
+  </div>
+
+  <span class="fsep">|</span>
+
+  <!-- Date filters -->
+  <div class="fbar-group">
+    <select id="yr-sel"  onchange="renderAll()"><option value="">All Years</option></select>
+    <select id="mo-sel"  onchange="renderAll()"><option value="">All Months</option></select>
+  </div>
+
+  <button class="btn-reset" onclick="resetF()">Reset</button>
+
+  <span class="fsep">|</span>
+
+  <!-- Update button -->
+  <button class="upd" id="upd-btn" onclick="doRefresh()">
+    <svg id="upd-ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+    Update Data
+  </button>
+</div>
+
+<!-- ══════════════════════════ MAIN CONTENT ══════════════════════════ -->
+<div class="con">
+
+  <!-- Dashboard Title -->
+  <div class="dh">
+    <div class="dt">EMotorad Sales &amp; Revenue Dashboard <span class="badge"><span class="dot"></span>LIVE</span></div>
+    <div class="dm">Live from Google Sheets &middot; <span id="rc">--</span> records &middot; <span id="ua">--</span></div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpis">
+    <div class="kpi"><div class="kl">Total Revenue</div><div class="kv" id="kr">--</div><div class="ks" id="krs">all channels</div></div>
+    <div class="kpi"><div class="kl">Units Sold</div><div class="kv" id="ku">--</div><div class="ks">net qty</div></div>
+    <div class="kpi"><div class="kl">Avg Selling Price</div><div class="kv" id="ka">--</div><div class="ks">per unit</div></div>
+    <div class="kpi"><div class="kl">Line Items</div><div class="kv" id="ki">--</div><div class="ks">rows in view</div></div>
+  </div>
+
+  <!-- Row 1: Period Trend + Channel Snapshot -->
+  <div class="row r21">
+    <div class="card">
+      <div class="chdr">
+        Period Trend
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="chdr-sub">bars = units &nbsp;|&nbsp; line = revenue</span>
+          <div class="mt" id="trend-per-grp">
+            <button class="mtb active" data-p="day"   onclick="setTrendPer(this)">Day</button>
+            <button class="mtb"        data-p="week"  onclick="setTrendPer(this)">Week</button>
+            <button class="mtb"        data-p="month" onclick="setTrendPer(this)">Month</button>
+          </div>
+        </div>
+      </div>
+      <div class="cw h240"><canvas id="c1"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="chdr">Channel Snapshot <span class="chdr-sub" id="lbl-snap"></span></div>
+      <div class="cw h240"><canvas id="c2"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 2: Channel Breakdown + SKU Mix + Material Margin -->
+  <div class="row r3">
+    <!-- Channel Breakdown -->
+    <div class="card">
+      <div class="chdr">
+        Channel Breakdown <span class="chdr-sub" id="lbl-ch"></span>
+        <div class="mt" id="cb-per-grp">
+          <button class="mtb active" data-p="all"   onclick="setCbPer(this)">All</button>
+          <button class="mtb"        data-p="day"   onclick="setCbPer(this)">Day</button>
+          <button class="mtb"        data-p="week"  onclick="setCbPer(this)">Week</button>
+          <button class="mtb"        data-p="month" onclick="setCbPer(this)">Month</button>
+        </div>
+      </div>
+      <div id="ctbl"></div>
+    </div>
+
+    <!-- SKU Mix -->
+    <div class="card">
+      <div class="chdr">
+        SKU Mix <span class="chdr-sub" id="lbl-mix"></span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <div class="mt">
+            <button class="mtb active" data-m="revenue" onclick="sMT(this,'mM');drawMix()">Revenue</button>
+            <button class="mtb"        data-m="units"   onclick="sMT(this,'mM');drawMix()">Units</button>
+          </div>
+          <div class="mt" id="mix-per-grp">
+            <button class="mtb active" data-p="all"   onclick="setMixPer(this)">All</button>
+            <button class="mtb"        data-p="day"   onclick="setMixPer(this)">Day</button>
+            <button class="mtb"        data-p="week"  onclick="setMixPer(this)">Week</button>
+            <button class="mtb"        data-p="month" onclick="setMixPer(this)">Month</button>
+          </div>
+        </div>
+      </div>
+      <div class="cw h240"><canvas id="c3"></canvas></div>
+    </div>
+
+    <!-- Material Margin -->
+    <div class="card">
+      <div class="chdr">
+        Material Margin
+        <div class="mt">
+          <button class="mtb active" data-mm="value"   onclick="setMMMode(this)">₹ Value</button>
+          <button class="mtb"        data-mm="percent" onclick="setMMMode(this)">% Revenue</button>
+        </div>
+      </div>
+      <div id="mm-tbl-wrap"></div>
+    </div>
+  </div>
+
+  <!-- Row 3: Top 10 SKUs (stacked bar) -->
+  <div class="row r1">
+    <div class="card">
+      <div class="chdr">
+        Top 10 SKUs
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <div class="mt">
+            <button class="mtb active" data-m="revenue" onclick="sMT(this,'sM');drawStack()">Revenue</button>
+            <button class="mtb"        data-m="units"   onclick="sMT(this,'sM');drawStack()">Units</button>
+          </div>
+          <div class="mt" id="top-per-grp">
+            <button class="mtb active" data-p="day"   onclick="setTopPer(this)">Day</button>
+            <button class="mtb"        data-p="week"  onclick="setTopPer(this)">Week</button>
+            <button class="mtb"        data-p="month" onclick="setTopPer(this)">Month</button>
+          </div>
+        </div>
+      </div>
+      <div class="cw h280"><canvas id="c4"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 4: Channel × Period (STACKED BAR) + SKU × Period (STACKED BAR) -->
+  <div class="row r2">
+    <div class="card">
+      <div class="chdr">
+        Channel &times; Period
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <select id="cday-ch" onchange="drawCDay()" style="font-size:11px;padding:4px 7px">
+            <option value="all">All Channels</option>
+            <option value="Online">Online</option>
+            <option value="Offline">Offline</option>
+            <option value="B2B">B2B</option>
+          </select>
+          <div class="mt">
+            <button class="mtb active" data-m="units"   onclick="sMT(this,'cdM');drawCDay()">Units</button>
+            <button class="mtb"        data-m="revenue" onclick="sMT(this,'cdM');drawCDay()">Revenue</button>
+          </div>
+          <div class="mt" id="cday-per-grp">
+            <button class="mtb active" data-p="day"   onclick="setCDayPer(this)">Day</button>
+            <button class="mtb"        data-p="week"  onclick="setCDayPer(this)">Week</button>
+            <button class="mtb"        data-p="month" onclick="setCDayPer(this)">Month</button>
+          </div>
+        </div>
+      </div>
+      <div class="cw h240"><canvas id="c5"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="chdr">
+        SKU &times; Period <span class="chdr-sub">(Top 8)</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <div class="mt">
+            <button class="mtb active" data-m="units"   onclick="sMT(this,'sdM');drawSDay()">Units</button>
+            <button class="mtb"        data-m="revenue" onclick="sMT(this,'sdM');drawSDay()">Revenue</button>
+          </div>
+          <div class="mt" id="sday-per-grp">
+            <button class="mtb active" data-p="day"   onclick="setSDayPer(this)">Day</button>
+            <button class="mtb"        data-p="week"  onclick="setSDayPer(this)">Week</button>
+            <button class="mtb"        data-p="month" onclick="setSDayPer(this)">Month</button>
+          </div>
+        </div>
+      </div>
+      <div class="cw h240"><canvas id="c6"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 5: SKU Performance Over Time -->
+  <div class="row r1">
+    <div class="card">
+      <div class="chdr">
+        SKU Performance — Over Time
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <select id="sku-perf-dd" onchange="drawSKUPerf()" style="max-width:200px;font-size:11px;padding:4px 7px"><option value="">All SKUs</option></select>
+          <div class="mt">
+            <button class="mtb active" data-m="revenue" onclick="sMT(this,'spM');drawSKUPerf()">Revenue</button>
+            <button class="mtb"        data-m="units"   onclick="sMT(this,'spM');drawSKUPerf()">Units</button>
+            <button class="mtb"        data-m="asp"     onclick="sMT(this,'spM');drawSKUPerf()">ASP</button>
+          </div>
+          <div class="mt" id="perf-per-grp">
+            <button class="mtb active" data-p="day"   onclick="setPerfPer(this)">Day</button>
+            <button class="mtb"        data-p="week"  onclick="setPerfPer(this)">Week</button>
+            <button class="mtb"        data-p="month" onclick="setPerfPer(this)">Month</button>
+          </div>
+        </div>
+      </div>
+      <div class="cw h300"><canvas id="c7"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 6: Revenue by Channel — Date Wise -->
+  <div class="row r1">
+    <div class="card">
+      <div class="chdr">
+        Revenue by Channel — Date Wise
+        <div class="mt" id="pdc-per-grp">
+          <button class="mtb active" data-p="day"   onclick="setPDCPer(this)">Day</button>
+          <button class="mtb"        data-p="week"  onclick="setPDCPer(this)">Week</button>
+          <button class="mtb"        data-p="month" onclick="setPDCPer(this)">Month</button>
+        </div>
+      </div>
+      <div class="tscroll" id="pd-ch"></div>
+    </div>
+  </div>
+
+  <!-- Row 7: Revenue by SKU — Date Wise -->
+  <div class="row r1">
+    <div class="card">
+      <div class="chdr">
+        Revenue by SKU — Date Wise
+        <div class="mt" id="pds-per-grp">
+          <button class="mtb active" data-p="day"   onclick="setPDSPer(this)">Day</button>
+          <button class="mtb"        data-p="week"  onclick="setPDSPer(this)">Week</button>
+          <button class="mtb"        data-p="month" onclick="setPDSPer(this)">Month</button>
+        </div>
+      </div>
+      <div class="tscroll" id="pd-sku"></div>
+    </div>
+  </div>
+
+</div><!-- /con -->
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+var snap = null;
+var aChan = "all", aSKU = "";
+
+// Per-section period state (all independent)
+var trendPer = "day";   // Period Trend
+var cbPer    = "all";   // Channel Breakdown
+var mixPer   = "all";   // SKU Mix
+var topPer   = "day";   // Top 10 SKUs
+var cdayPer  = "day";   // Channel × Period
+var sdayPer  = "day";   // SKU × Period
+var perfPer  = "day";   // SKU Performance
+var pdcPer   = "day";   // Revenue by Channel table
+var pdsPer   = "day";   // Revenue by SKU table
+
+// Mode toggles
+var M = {tM:"revenue",mM:"revenue",sM:"revenue",cdM:"units",sdM:"units",spM:"revenue"};
+
+// Material Margin display mode
+var mmMode = "value"; // "value" | "percent"
+
+// Colours
+var CC  = {Online:"#3b82f6",Offline:"#10b981",B2B:"#f59e0b"};
+var SC  = ["#6366f1","#ec4899","#14b8a6","#f97316","#8b5cf6","#06b6d4","#84cc16","#ef4444","#a855f7","#22d3ee","#fb923c","#38bdf8"];
+var MSHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var OPT = {animation:false,responsive:true,maintainAspectRatio:false};
+var GX  = {grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10}}};
+var GY  = {grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10}}};
+
+// ══════════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════════
+function fmtLabel(d) {
+  var p=d.split("-");
+  if(p.length===1) return d;
+  if(p.length===2) return MSHORT[parseInt(p[1])-1]+" '"+p[0].slice(2);
+  return parseInt(p[2]).toString();
+}
+
+function pkey(d,per) {
+  if(per==="day")   return d;
+  if(per==="month") return d.slice(0,7);
+  var dt=new Date(d+"T00:00:00"),dow=dt.getDay()||7;dt.setDate(dt.getDate()-dow+1);
+  return dt.toISOString().slice(0,10);
+}
+
+function scopeRows(rows,per) {
+  if(per==="all") return rows;
+  if(!rows.length) return rows;
+  var keys = rows.map(function(r){return pkey(r[0],per);});
+  var unique = keys.filter(function(k,i,a){return a.indexOf(k)===i;}).sort();
+  var lastPk = unique[unique.length-1];
+  return rows.filter(function(r){return pkey(r[0],per)===lastPk;});
+}
+
+function fr(v) {
+  var a=Math.abs(v);
+  if(a>=10000000) return "₹"+(v/10000000).toFixed(2)+" Cr";
+  if(a>=100000)   return "₹"+(v/100000).toFixed(2)+" L";
+  if(a>=1000)     return "₹"+(v/1000).toFixed(1)+"K";
+  return "₹"+Math.round(v).toLocaleString("en-IN");
+}
+function fmtFn(m){return m==="units"?function(v){return v.toLocaleString();}:function(v){return fr(v);};}
+function mkC(id,cfg){var ex=Chart.getChart(document.getElementById(id));if(ex)ex.destroy();return new Chart(document.getElementById(id).getContext("2d"),cfg);}
+
+// ══════════════════════════════════════════════════════════════
+// PERIOD TOGGLE HANDLERS (one per section)
+// ══════════════════════════════════════════════════════════════
+function activateMtb(el){el.closest(".mt").querySelectorAll(".mtb").forEach(function(b){b.classList.remove("active");});el.classList.add("active");}
+
+function setTrendPer(el){activateMtb(el);trendPer=el.dataset.p;drawTrend(getR());}
+function setCbPer(el){activateMtb(el);cbPer=el.dataset.p;var r=getR();drawChanTbl(scopeRows(r,cbPer));var l=document.getElementById("lbl-ch");if(l)l.textContent=cbPer==="all"?"":"— Latest "+cap(cbPer);}
+function setMixPer(el){activateMtb(el);mixPer=el.dataset.p;drawMix(scopeRows(getR(),mixPer));var l=document.getElementById("lbl-mix");if(l)l.textContent=mixPer==="all"?"":"— Latest "+cap(mixPer);}
+function setTopPer(el){activateMtb(el);topPer=el.dataset.p;drawStack(getR());}
+function setCDayPer(el){activateMtb(el);cdayPer=el.dataset.p;drawCDay(getR());}
+function setSDayPer(el){activateMtb(el);sdayPer=el.dataset.p;drawSDay(getR());}
+function setPerfPer(el){activateMtb(el);perfPer=el.dataset.p;drawSKUPerf(getR());}
+function setPDCPer(el){activateMtb(el);pdcPer=el.dataset.p;drawPD(getR());}
+function setPDSPer(el){activateMtb(el);pdsPer=el.dataset.p;drawPD(getR());}
+function setMMMode(el){activateMtb(el);mmMode=el.dataset.mm;drawMM(getR());}
+
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+function sMT(el,k){activateMtb(el);M[k]=el.dataset.m;}
+
+// ══════════════════════════════════════════════════════════════
+// GLOBAL FILTER HANDLERS
+// ══════════════════════════════════════════════════════════════
+function setChan(el){document.querySelectorAll(".cht").forEach(function(b){b.classList.remove("active");});el.classList.add("active");aChan=el.dataset.ch;renderAll();}
+function setSKU(){aSKU=document.getElementById("sku-sel").value;renderAll();}
+function resetF(){
+  ["yr-sel","mo-sel"].forEach(function(id){document.getElementById(id).value="";});
+  document.getElementById("sku-sel").value="";aSKU="";
+  document.querySelectorAll(".cht").forEach(function(b){b.classList.toggle("active",b.dataset.ch==="all");});
+  aChan="all";renderAll();
+}
+
+// ══════════════════════════════════════════════════════════════
+// DATA FETCHING
+// ══════════════════════════════════════════════════════════════
+window.addEventListener("DOMContentLoaded",function(){load();});
+function doRefresh(){load();}
+
+function load(){
+  var b=document.getElementById("upd-btn"),ic=document.getElementById("upd-ico");
+  b.disabled=true;ic.classList.add("spin");
+  fetch("/api/sheet",{cache:"no-store"})
+    .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
+    .then(function(j){
+      if(j.error)throw new Error(j.error);
+      snap=j;
+      buildSel();fillDates();
+      document.getElementById("ua").textContent="Updated "+new Date(snap.generated_at).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+      document.getElementById("rc").textContent=snap.rowCount.toLocaleString();
+      renderAll();
+    })
+    .catch(function(e){alert("Error loading data: "+e.message);})
+    .finally(function(){b.disabled=false;ic.classList.remove("spin");});
+}
+
+function buildSel(){
+  var sorted=(snap.skus||[]).slice().sort();
+  function fillDD(id,pv){
+    var s=document.getElementById(id);s.innerHTML="<option value=''>All SKUs</option>";
+    sorted.forEach(function(x){var o=document.createElement("option");o.value=x;o.textContent=x;s.appendChild(o);});
+    if(pv)[].slice.call(s.options).forEach(function(o){if(o.value===pv)s.value=pv;});
+  }
+  fillDD("sku-sel",aSKU);fillDD("sku-perf-dd",document.getElementById("sku-perf-dd").value);
+}
+
+function fillDates(){
+  fS("yr-sel","All Years",snap.availableYears);
+  fS("mo-sel","All Months",(snap.availableMonths||[]).map(function(m){
+    var pts=m.split("-"),nd=new Date(+pts[0],+pts[1]-1,1);
+    return{v:m,l:nd.toLocaleString("en-IN",{month:"long",year:"numeric"})};
+  }));
+  // Auto-select latest month
+  if((snap.availableMonths||[]).length>0){
+    var lat=snap.availableMonths[snap.availableMonths.length-1];
+    document.getElementById("mo-sel").value=lat;
+  }
+}
+
+function fS(id,ph,items){
+  var s=document.getElementById(id),pv=s.value;
+  s.innerHTML="<option value=''>"+ph+"</option>";
+  items.forEach(function(x){var o=document.createElement("option");typeof x==="string"?(o.value=o.textContent=x):(o.value=x.v,o.textContent=x.l);s.appendChild(o);});
+  if(pv)[].slice.call(s.options).forEach(function(o){if(o.value===pv)s.value=pv;});
+}
+
+// ══════════════════════════════════════════════════════════════
+// ROW FILTERING
+// ══════════════════════════════════════════════════════════════
+function getR(){
+  if(!snap)return[];
+  var yr=document.getElementById("yr-sel").value,mo=document.getElementById("mo-sel").value;
+  return snap.rows.filter(function(r){
+    if(yr&&!r[0].startsWith(yr))return false;
+    if(mo&&!r[0].startsWith(mo))return false;
+    if(aChan!=="all"&&(snap.channels||[])[r[1]]!==aChan)return false;
+    if(aSKU!==""&&(snap.skus||[])[r[2]]!==aSKU)return false;
+    return true;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER ALL
+// ══════════════════════════════════════════════════════════════
+function renderAll(){
+  if(!snap)return;
+  var rows=getR();
+
+  // Channel Snapshot: last period from trendPer
+  var periodRows=rows, pkLabel="";
+  if(rows.length){
+    var pkeys=rows.map(function(r){return pkey(r[0],trendPer);}).filter(function(k,i,a){return a.indexOf(k)===i;}).sort();
+    var lastPk=pkeys[pkeys.length-1];
+    periodRows=rows.filter(function(r){return pkey(r[0],trendPer)===lastPk;});
+    pkLabel=fmtLabel(lastPk);
+  }
+  var snapEl=document.getElementById("lbl-snap");
+  if(snapEl)snapEl.textContent=pkLabel?("— "+pkLabel):"";
+
+  // Update section labels
+  var chLbl=document.getElementById("lbl-ch");
+  if(chLbl)chLbl.textContent=cbPer==="all"?"":"— Latest "+cap(cbPer);
+  var mixLbl=document.getElementById("lbl-mix");
+  if(mixLbl)mixLbl.textContent=mixPer==="all"?"":"— Latest "+cap(mixPer);
+
+  drawKPI(rows);
+  drawChanTbl(scopeRows(rows,cbPer));
+  setTimeout(function(){drawTrend(rows);},10);
+  setTimeout(function(){drawDonut(periodRows);},40);
+  setTimeout(function(){drawMix(scopeRows(rows,mixPer));},70);
+  setTimeout(function(){drawMM(rows);},90);
+  setTimeout(function(){drawStack(rows);},110);
+  setTimeout(function(){drawCDay(rows);},140);
+  setTimeout(function(){drawSDay(rows);},170);
+  setTimeout(function(){drawSKUPerf(rows);},200);
+  setTimeout(function(){drawPD(rows);},230);
+}
+
+// ══════════════════════════════════════════════════════════════
+// KPI
+// ══════════════════════════════════════════════════════════════
+function drawKPI(rows){
+  var rev=0,units=0;
+  rows.forEach(function(r){rev+=r[4];units+=r[3];});
+  document.getElementById("kr").textContent=fr(rev);
+  document.getElementById("ku").textContent=units.toLocaleString("en-IN");
+  document.getElementById("ka").textContent=units>0?fr(rev/units):"--";
+  document.getElementById("ki").textContent=rows.length.toLocaleString();
+  document.getElementById("krs").textContent=aChan==="all"?"all channels":aChan+(aSKU?" · "+aSKU:"");
+}
+
+// ══════════════════════════════════════════════════════════════
+// PERIOD TREND (uses trendPer)
+// ══════════════════════════════════════════════════════════════
+function drawTrend(rows){
+  rows=rows||getR();var grp={};
+  rows.forEach(function(r){var k=pkey(r[0],trendPer);if(!grp[k])grp[k]={rev:0,units:0};grp[k].rev+=r[4];grp[k].units+=r[3];});
+  var lb=Object.keys(grp).sort();
+  var rd=lb.map(function(k){return Math.round(grp[k].rev);});
+  var ud=lb.map(function(k){return grp[k].units;});
+  mkC("c1",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:[
+    {type:"bar",label:"Units",data:ud,backgroundColor:"rgba(59,130,246,0.7)",yAxisID:"y",borderRadius:3,order:2},
+    {type:"line",label:"Revenue",data:rd,borderColor:"#10b981",backgroundColor:"transparent",yAxisID:"y1",tension:0.3,pointRadius:3,borderWidth:2,order:1}
+  ]},options:Object.assign({},OPT,{scales:{
+    x:Object.assign({},GX,{ticks:Object.assign({},GX.ticks,{maxRotation:50})}),
+    y:{position:"left",grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10}}},
+    y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:"#10b981",font:{size:10},callback:function(v){return fr(v);}}}
+  },plugins:{
+    legend:{position:"top",labels:{color:"#94a3b8",font:{size:11},boxWidth:10}},
+    tooltip:{mode:"index",intersect:false,callbacks:{label:function(c){return" "+c.dataset.label+": "+(c.dataset.yAxisID==="y1"?fr(c.parsed.y):c.parsed.y.toLocaleString());}}}
+  }})});
+}
+
+// ══════════════════════════════════════════════════════════════
+// CHANNEL SNAPSHOT (donut)
+// ══════════════════════════════════════════════════════════════
+function drawDonut(rows){
+  rows=rows||getR();var map={};
+  rows.forEach(function(r){var ch=(snap.channels||[])[r[1]]||"?";map[ch]=(map[ch]||0)+r[4];});
+  var lb=Object.keys(map).sort(function(a,b){return map[b]-map[a];}),dat=lb.map(function(k){return Math.round(map[k]);}),bgc=lb.map(function(k){return CC[k]||"#6366f1";});
+  mkC("c2",{type:"doughnut",data:{labels:lb,datasets:[{data:dat,backgroundColor:bgc,borderColor:"#060d1a",borderWidth:3,hoverOffset:5}]},
+    options:Object.assign({},OPT,{cutout:"65%",plugins:{legend:{position:"bottom",labels:{color:"#94a3b8",font:{size:11},padding:10,boxWidth:10}},
+      tooltip:{callbacks:{label:function(c){var t=c.dataset.data.reduce(function(a,b){return a+b;},0);return" "+c.label+": "+fr(c.parsed)+" ("+Math.round(c.parsed/t*100)+"%)";}}}}})});
+}
+
+// ══════════════════════════════════════════════════════════════
+// CHANNEL BREAKDOWN TABLE
+// ══════════════════════════════════════════════════════════════
+function drawChanTbl(rows){
+  var chs=snap.channels||[],map={};
+  chs.forEach(function(ch){map[ch]={rev:0,units:0};});
+  rows.forEach(function(r){var ch=chs[r[1]]||"?";if(!map[ch])map[ch]={rev:0,units:0};map[ch].rev+=r[4];map[ch].units+=r[3];});
+  var ents=Object.entries(map).filter(function(e){return e[1].rev>0||e[1].units>0;}).sort(function(a,b){return b[1].rev-a[1].rev;});
+  var tR=ents.reduce(function(s,e){return s+e[1].rev;},0),tU=ents.reduce(function(s,e){return s+e[1].units;},0),mR=ents.length?ents[0][1].rev:1;
+  var h="<table class='dt2'><thead><tr><th>Channel</th><th>Revenue</th><th>Units</th><th>ASP</th><th>Rev%</th><th style='width:80px'></th></tr></thead><tbody>";
+  ents.forEach(function(e){
+    var ch=e[0],v=e[1],rs=tR>0?(v.rev/tR*100).toFixed(1):0,bp=mR>0?Math.round(v.rev/mR*100):0,col=CC[ch]||"#6366f1";
+    h+="<tr><td style='color:#f1f5f9;font-weight:700'>"+ch+"</td><td style='color:#f1f5f9'>"+fr(v.rev)+"</td><td>"+v.units.toLocaleString("en-IN")+"</td><td>"+(v.units>0?fr(v.rev/v.units):"--")+"</td><td>"+rs+"%</td><td><div class='bw'><div class='bb'><div style='height:5px;border-radius:2px;background:"+col+";width:"+bp+"%'></div></div></div></td></tr>";
+  });
+  h+="<tr style='border-top:2px solid #334155;font-weight:700'><td style='color:#f1f5f9'>TOTAL</td><td style='color:#f1f5f9'>"+fr(tR)+"</td><td style='color:#f1f5f9'>"+tU.toLocaleString("en-IN")+"</td><td style='color:#f1f5f9'>"+(tU>0?fr(tR/tU):"--")+"</td><td style='color:#f1f5f9'>100%</td><td></td></tr>";
+  document.getElementById("ctbl").innerHTML=h+"</tbody></table>";
+}
+
+// ══════════════════════════════════════════════════════════════
+// SKU MIX (donut)
+// ══════════════════════════════════════════════════════════════
+function drawMix(rows){
+  rows=rows||getR();var m=M.mM,map={};
+  rows.forEach(function(r){var s=(snap.skus||[])[r[2]]||"?";if(!map[s])map[s]={rev:0,units:0};map[s].rev+=r[4];map[s].units+=r[3];});
+  var sorted=Object.entries(map).sort(function(a,b){return m==="revenue"?b[1].rev-a[1].rev:b[1].units-a[1].units;});
+  var top=sorted.slice(0,12);if(sorted.length>12){var oR=0,oU=0;sorted.slice(12).forEach(function(e){oR+=e[1].rev;oU+=e[1].units;});top.push(["Other",{rev:oR,units:oU}]);}
+  var lb=top.map(function(e){return e[0];}),dat=top.map(function(e){return m==="revenue"?Math.round(e[1].rev):e[1].units;}),bgc=lb.map(function(l,i){return i<SC.length?SC[i]:"#94a3b8";});
+  mkC("c3",{type:"doughnut",data:{labels:lb,datasets:[{data:dat,backgroundColor:bgc,borderColor:"#060d1a",borderWidth:2,hoverOffset:4}]},
+    options:Object.assign({},OPT,{cutout:"52%",plugins:{legend:{position:"right",labels:{color:"#94a3b8",font:{size:10},padding:5,boxWidth:8}},
+      tooltip:{callbacks:{label:function(c){var t=c.dataset.data.reduce(function(a,b){return a+b;},0);return" "+c.label+": "+(m==="revenue"?fr(c.parsed):c.parsed.toLocaleString()+" u")+" ("+Math.round(c.parsed/t*100)+"%)";}}}}})});
+}
+
+// ══════════════════════════════════════════════════════════════
+// MATERIAL MARGIN TABLE
+// ══════════════════════════════════════════════════════════════
+function drawMM(rows){
+  rows=rows||getR();
+  var skuData={};
+  rows.forEach(function(r){
+    var s=(snap.skus||[])[r[2]]||"?";
+    if(!skuData[s])skuData[s]={taxable:0,matCost:0,units:0};
+    skuData[s].taxable+=r[4];
+    skuData[s].matCost+=r[5]; // index 5 = materialCost
+    skuData[s].units+=r[3];
+  });
+  var ents=Object.entries(skuData).sort(function(a,b){return b[1].taxable-a[1].taxable;});
+  var totTax=0,totMat=0;
+  ents.forEach(function(e){totTax+=e[1].taxable;totMat+=e[1].matCost;});
+  var totMargin=totTax-totMat;
+  var isPercent=(mmMode==="percent");
+
+  var h="<table class='mm-tbl'><thead><tr><th style='text-align:left'>SKU</th>";
+  if(isPercent){
+    h+="<th>Margin %</th><th>Revenue</th><th>Mat. Cost %</th>";
+  } else {
+    h+="<th>Revenue</th><th>Mat. Cost</th><th>Margin (₹)</th><th>Margin %</th>";
+  }
+  h+="</tr></thead><tbody>";
+
+  ents.forEach(function(e,i){
+    var s=e[0],v=e[1];
+    var margin=v.taxable-v.matCost;
+    var marginPct=v.taxable>0?(margin/v.taxable*100):0;
+    var matPct=v.taxable>0?(v.matCost/v.taxable*100):0;
+    var col=SC[i%SC.length];
+    var marginClass=margin>=0?"mm-pos":"mm-neg";
+    if(isPercent){
+      h+="<tr><td style='color:"+col+";font-weight:700'>"+s+"</td><td class='"+marginClass+"'>"+marginPct.toFixed(1)+"%</td><td>"+fr(v.taxable)+"</td><td>"+matPct.toFixed(1)+"%</td></tr>";
+    } else {
+      h+="<tr><td style='color:"+col+";font-weight:700'>"+s+"</td><td>"+fr(v.taxable)+"</td><td>"+fr(v.matCost)+"</td><td class='"+marginClass+"'>"+fr(margin)+"</td><td class='"+marginClass+"'>"+marginPct.toFixed(1)+"%</td></tr>";
+    }
+  });
+
+  // Total row
+  var totMarginPct=totTax>0?(totMargin/totTax*100):0;
+  var totMatPct=totTax>0?(totMat/totTax*100):0;
+  var totClass=totMargin>=0?"mm-pos":"mm-neg";
+  if(isPercent){
+    h+="<tr class='total-row'><td>TOTAL</td><td class='"+totClass+"'>"+totMarginPct.toFixed(1)+"%</td><td>"+fr(totTax)+"</td><td>"+totMatPct.toFixed(1)+"%</td></tr>";
+  } else {
+    h+="<tr class='total-row'><td>TOTAL</td><td>"+fr(totTax)+"</td><td>"+fr(totMat)+"</td><td class='"+totClass+"'>"+fr(totMargin)+"</td><td class='"+totClass+"'>"+totMarginPct.toFixed(1)+"%</td></tr>";
+  }
+  document.getElementById("mm-tbl-wrap").innerHTML=h+"</tbody></table>";
+}
+
+// ══════════════════════════════════════════════════════════════
+// TOP 10 SKUs — STACKED BAR (uses topPer)
+// ══════════════════════════════════════════════════════════════
+function drawStack(rows){
+  rows=rows||getR();var m=M.sM,skuMap={};
+  rows.forEach(function(r){var s=(snap.skus||[])[r[2]]||"?";if(!skuMap[s])skuMap[s]={rev:0,units:0};skuMap[s].rev+=r[4];skuMap[s].units+=r[3];});
+  var top10=Object.entries(skuMap).sort(function(a,b){return m==="revenue"?b[1].rev-a[1].rev:b[1].units-a[1].units;}).slice(0,10).map(function(e){return e[0];});
+  var dayMap={};
+  rows.forEach(function(r){
+    var s=(snap.skus||[])[r[2]]||"?";if(top10.indexOf(s)<0)return;
+    var k=pkey(r[0],topPer);
+    if(!dayMap[k])dayMap[k]={};if(!dayMap[k][s])dayMap[k][s]={rev:0,units:0};
+    dayMap[k][s].rev+=r[4];dayMap[k][s].units+=r[3];
+  });
+  var lb=Object.keys(dayMap).sort(),f=fmtFn(m);
+  var ds=top10.map(function(s,i){return{label:s,data:lb.map(function(k){var v=dayMap[k]&&dayMap[k][s];return v?(m==="revenue"?Math.round(v.rev):v.units):0;}),backgroundColor:SC[i%SC.length],borderRadius:1,stack:"s"};});
+  var totalPlugin={id:"st",afterDatasetsDraw:function(chart){var ctx=chart.ctx;lb.forEach(function(_,i){var total=chart.data.datasets.reduce(function(s,d2){return s+(d2.data[i]||0);},0);if(!total)return;var topY=null;chart.data.datasets.forEach(function(_,di){var m2=chart.getDatasetMeta(di);if(m2.data[i]&&(topY===null||m2.data[i].y<topY))topY=m2.data[i].y;});var meta0=chart.getDatasetMeta(0);if(!meta0.data[i]||topY===null)return;ctx.save();ctx.fillStyle="#e2e8f0";ctx.font="bold 9px sans-serif";ctx.textAlign="center";ctx.fillText(f(total),meta0.data[i].x,topY-4);ctx.restore();});}};
+  mkC("c4",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:ds},options:Object.assign({},OPT,{
+    scales:{x:{stacked:true,grid:{color:"#1e293b"},ticks:{color:"#64748b",maxRotation:50,font:{size:10}}},y:{stacked:true,grid:{color:"#1e293b"},ticks:{color:"#64748b",callback:f,font:{size:10}}}},
+    plugins:{legend:{position:"top",labels:{color:"#94a3b8",font:{size:10},boxWidth:8,padding:6}},tooltip:{mode:"index",intersect:false,callbacks:{label:function(c){return" "+c.dataset.label+": "+f(c.parsed.y);}}}}
+  }),plugins:[totalPlugin]});
+}
+
+// ══════════════════════════════════════════════════════════════
+// CHANNEL × PERIOD — STACKED BAR (uses cdayPer)
+// ══════════════════════════════════════════════════════════════
+function drawCDay(rows){
+  rows=rows||getR();
+  var localCh=document.getElementById("cday-ch").value;
+  var m=M.cdM,chs=snap.channels||[],actChs=localCh==="all"?chs:[localCh],chMap={};
+  actChs.forEach(function(ch){chMap[ch]={};});
+  rows.forEach(function(r){
+    var ch=chs[r[1]]||"?";if(actChs.indexOf(ch)<0)return;
+    var k=pkey(r[0],cdayPer);
+    if(!chMap[ch])chMap[ch]={};if(!chMap[ch][k])chMap[ch][k]={rev:0,units:0};
+    chMap[ch][k].rev+=r[4];chMap[ch][k].units+=r[3];
+  });
+  var ks={};Object.values(chMap).forEach(function(mp){Object.keys(mp).forEach(function(k){ks[k]=1;});});
+  var lb=Object.keys(ks).sort(),f=fmtFn(m);
+  var ds=actChs.map(function(ch){return{
+    label:ch,
+    data:lb.map(function(k){var v=chMap[ch]&&chMap[ch][k];return v?(m==="revenue"?Math.round(v.rev):v.units):0;}),
+    backgroundColor:CC[ch]||"#6366f1",
+    stack:"s"
+  };});
+  mkC("c5",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:ds},options:Object.assign({},OPT,{
+    scales:{
+      x:Object.assign({},GX,{stacked:true,ticks:Object.assign({},GX.ticks,{maxRotation:50})}),
+      y:Object.assign({},GY,{stacked:true,ticks:Object.assign({},GY.ticks,{callback:f})})
+    },
+    plugins:{legend:{position:"top",labels:{color:"#94a3b8",font:{size:11},boxWidth:10}},tooltip:{mode:"index",intersect:false,callbacks:{label:function(c){return" "+c.dataset.label+": "+f(c.parsed.y);}}}}
+  })});
+}
+
+// ══════════════════════════════════════════════════════════════
+// SKU × PERIOD — STACKED BAR (uses sdayPer)
+// ══════════════════════════════════════════════════════════════
+function drawSDay(rows){
+  rows=rows||getR();var m=M.sdM,st={};
+  rows.forEach(function(r){var s=(snap.skus||[])[r[2]]||"?";if(!st[s])st[s]={rev:0,units:0};st[s].rev+=r[4];st[s].units+=r[3];});
+  var top8=Object.entries(st).sort(function(a,b){return m==="revenue"?b[1].rev-a[1].rev:b[1].units-a[1].units;}).slice(0,8).map(function(e){return e[0];});
+  var spMap={};top8.forEach(function(s){spMap[s]={};});
+  rows.forEach(function(r){
+    var s=(snap.skus||[])[r[2]]||"?";if(top8.indexOf(s)<0)return;
+    var k=pkey(r[0],sdayPer);
+    if(!spMap[s][k])spMap[s][k]={rev:0,units:0};
+    spMap[s][k].rev+=r[4];spMap[s][k].units+=r[3];
+  });
+  var ks={};Object.values(spMap).forEach(function(mp){Object.keys(mp).forEach(function(k){ks[k]=1;});});
+  var lb=Object.keys(ks).sort(),f=fmtFn(m);
+  var ds=top8.map(function(s,i){return{
+    label:s,
+    data:lb.map(function(k){var v=spMap[s][k];return v?(m==="revenue"?Math.round(v.rev):v.units):0;}),
+    backgroundColor:SC[i%SC.length],
+    stack:"s"
+  };});
+  mkC("c6",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:ds},options:Object.assign({},OPT,{
+    scales:{
+      x:Object.assign({},GX,{stacked:true,ticks:Object.assign({},GX.ticks,{maxRotation:50})}),
+      y:Object.assign({},GY,{stacked:true,ticks:Object.assign({},GY.ticks,{callback:f})})
+    },
+    plugins:{legend:{position:"top",labels:{color:"#94a3b8",font:{size:10},boxWidth:8,padding:6}},tooltip:{mode:"index",intersect:false,callbacks:{label:function(c){return" "+c.dataset.label+": "+f(c.parsed.y);}}}}
+  })});
+}
+
+// ══════════════════════════════════════════════════════════════
+// SKU PERFORMANCE OVER TIME (uses perfPer)
+// ══════════════════════════════════════════════════════════════
+function drawSKUPerf(rows){
+  rows=rows||getR();var m=M.spM;
+  var sel=document.getElementById("sku-perf-dd").value;
+  var grp={};
+  rows.forEach(function(r){
+    if(sel&&(snap.skus||[])[r[2]]!==sel)return;
+    var k=pkey(r[0],perfPer);if(!grp[k])grp[k]={rev:0,units:0};
+    grp[k].rev+=r[4];grp[k].units+=r[3];
+  });
+  var lb=Object.keys(grp).sort(),f=fmtFn(m==="asp"?"revenue":m);
+  var dat=lb.map(function(k){var v=grp[k];if(m==="revenue")return Math.round(v.rev);if(m==="units")return v.units;return v.units>0?Math.round(v.rev/v.units):0;});
+  var spPlugin={id:"sp",afterDatasetsDraw:function(chart){var ctx=chart.ctx,ds=chart.data.datasets[0],meta=chart.getDatasetMeta(0);if(!ds)return;meta.data.forEach(function(bar,i){var val=ds.data[i];if(!val)return;ctx.save();ctx.fillStyle="#94a3b8";ctx.font="bold 9px sans-serif";ctx.textAlign="center";ctx.fillText(f(val),bar.x,bar.y-5);ctx.restore();});}};
+  mkC("c7",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:[{data:dat,backgroundColor:"rgba(99,102,241,0.82)",borderRadius:3}]},
+    options:Object.assign({},OPT,{scales:{x:Object.assign({},GX,{ticks:Object.assign({},GX.ticks,{maxRotation:50})}),y:Object.assign({},GY,{ticks:Object.assign({},GY.ticks,{callback:f})})},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return" "+f(c.parsed.y);}}}}}),plugins:[spPlugin]});
+}
+
+// ══════════════════════════════════════════════════════════════
+// PERIOD DETAIL TABLES — Revenue by Channel + Revenue by SKU
+// (uses pdcPer and pdsPer respectively)
+// ══════════════════════════════════════════════════════════════
+function drawPD(rows){
+  rows=rows||getR();
+  // ── Channel table (uses pdcPer) ──
+  var chs=snap.channels||[],chDateMap={},chTotals={};
+  rows.forEach(function(r){
+    var k=pkey(r[0],pdcPer);var ch=chs[r[1]]||"?";
+    if(!chDateMap[k])chDateMap[k]={};if(!chDateMap[k][ch])chDateMap[k][ch]={rev:0,units:0};
+    chDateMap[k][ch].rev+=r[4];chDateMap[k][ch].units+=r[3];
+    if(!chTotals[ch])chTotals[ch]={rev:0};chTotals[ch].rev+=r[4];
+  });
+  var dates=Object.keys(chDateMap).sort();
+  var usedChs=Object.keys(chTotals).sort(function(a,b){return chTotals[b].rev-chTotals[a].rev;});
+  var h="<table class='ptbl'><thead><tr><th style='min-width:80px;text-align:left'>Channel</th>";
+  dates.forEach(function(d){h+="<th>"+fmtLabel(d)+"</th>";});
+  h+="<th>Total</th></tr></thead><tbody>";
+  usedChs.forEach(function(ch){
+    var col=CC[ch]||"#94a3b8";var rowTotal=0;
+    h+="<tr><td style='color:"+col+";font-weight:700'>"+ch+"</td>";
+    dates.forEach(function(d){var v=chDateMap[d]&&chDateMap[d][ch];var rev=v?v.rev:0;rowTotal+=rev;h+="<td>"+(rev?fr(rev):"--")+"</td>";});
+    h+="<td style='font-weight:700;color:#f1f5f9'>"+fr(rowTotal)+"</td></tr>";
+  });
+  var dateTotals=dates.map(function(d){return Object.values(chDateMap[d]||{}).reduce(function(s,v){return s+v.rev;},0);});
+  var grandTotal=dateTotals.reduce(function(s,t){return s+t;},0);
+  h+="<tr style='border-top:2px solid #334155'><td style='font-weight:700;color:#f1f5f9'>Total</td>";
+  dateTotals.forEach(function(t){h+="<td style='font-weight:700;color:#f1f5f9'>"+fr(t)+"</td>";});
+  h+="<td style='font-weight:700;color:#f1f5f9'>"+fr(grandTotal)+"</td></tr></tbody></table>";
+  document.getElementById("pd-ch").innerHTML=h;
+
+  // ── SKU table (uses pdsPer) ──
+  var skuTotals={};
+  rows.forEach(function(r){var s=(snap.skus||[])[r[2]]||"?";if(!skuTotals[s])skuTotals[s]=0;skuTotals[s]+=r[4];});
+  var top10skus=Object.keys(skuTotals).sort(function(a,b){return skuTotals[b]-skuTotals[a];});
+  var skuDateMap={};
+  rows.forEach(function(r){
+    var s=(snap.skus||[])[r[2]]||"?";if(top10skus.indexOf(s)<0)return;
+    var k=pkey(r[0],pdsPer);
+    if(!skuDateMap[k])skuDateMap[k]={};if(!skuDateMap[k][s])skuDateMap[k][s]={rev:0,units:0};
+    skuDateMap[k][s].rev+=r[4];skuDateMap[k][s].units+=r[3];
+  });
+  var skuDates=Object.keys(skuDateMap).sort();
+  var h2="<table class='ptbl'><thead><tr><th style='min-width:110px;text-align:left'>SKU</th>";
+  skuDates.forEach(function(d){h2+="<th>"+fmtLabel(d)+"</th>";});
+  h2+="<th>Total</th></tr></thead><tbody>";
+  top10skus.forEach(function(s,i){
+    var col=SC[i%SC.length];var rowTotal=0;
+    h2+="<tr><td style='color:"+col+";font-weight:600'>"+s+"</td>";
+    skuDates.forEach(function(d){var v=skuDateMap[d]&&skuDateMap[d][s];var rev=v?v.rev:0;rowTotal+=rev;h2+="<td>"+(rev?fr(rev):"--")+"</td>";});
+    h2+="<td style='font-weight:700;color:#f1f5f9'>"+fr(rowTotal)+"</td></tr>";
+  });
+  var skuDateTotals=skuDates.map(function(d){return Object.values(skuDateMap[d]||{}).reduce(function(s,v){return s+v.rev;},0);});
+  var grandTotal2=skuDateTotals.reduce(function(s,t){return s+t;},0);
+  h2+="<tr style='border-top:2px solid #334155'><td style='font-weight:700;color:#f1f5f9'>Total</td>";
+  skuDateTotals.forEach(function(t){h2+="<td style='font-weight:700;color:#f1f5f9'>"+fr(t)+"</td>";});
+  h2+="<td style='font-weight:700;color:#f1f5f9'>"+fr(grandTotal2)+"</td></tr></tbody></table>";
+  document.getElementById("pd-sku").innerHTML=h2;
+}
+</script>
+</body>
+</html>
