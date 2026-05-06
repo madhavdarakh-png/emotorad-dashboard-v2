@@ -185,8 +185,29 @@ module.exports = async function(req, res) {
   res.setHeader("Access-Control-Allow-Methods","GET,OPTIONS");
   if(req.method==="OPTIONS"){ res.status(200).end(); return; }
 
+  // ── DIAGNOSTIC: verify env + SA JSON before any async work ──────
+  const rawSA = process.env.GOOGLE_SA_JSON || "";
+  let sa;
   try {
-    const sa    = JSON.parse(process.env.GOOGLE_SA_JSON);
+    sa = JSON.parse(rawSA);
+  } catch(parseErr) {
+    return res.status(500).json({
+      error: "GOOGLE_SA_JSON parse failed: " + parseErr.message,
+      sa_length: rawSA.length,
+      sa_preview: rawSA.slice(0,80),
+      node: process.version
+    });
+  }
+  if(!sa || !sa.private_key || !sa.client_email) {
+    return res.status(500).json({
+      error: "GOOGLE_SA_JSON missing private_key or client_email",
+      keys: sa ? Object.keys(sa) : [],
+      node: process.version
+    });
+  }
+  // ── END DIAGNOSTIC ───────────────────────────────────────────────
+
+  try {
     const token = await getToken(sa);
 
     // Resolve sheet title from GID
@@ -221,21 +242,4 @@ module.exports = async function(req, res) {
       const qty     = parseFloat(row[17]) || 0;
       const rev     = parseFloat(row[19]) || 0;
 
-      if(!channel || !model)                        continue;
-      if(type.toLowerCase().includes("accessor"))   continue;
-      if(qty===0 && rev===0)                        continue;
-
-      const dateStr = parseDateStr(dateRaw);
-      if(!dateStr) continue;
-
-      if(channelMap[channel]===undefined){ channelMap[channel]=channels.length; channels.push(channel); }
-      if(skuMap[model]===undefined)      { skuMap[model]=skus.length;           skus.push(model);       }
-      dates.add(dateStr);
-
-      const matCost = (MATERIAL_COST_PER_SKU[model] || 0) * qty;
-
-      // Row format: [date, channelIdx, skuIdx, qty, taxableValue, materialCost]
-      rows.push([dateStr, channelMap[channel], skuMap[model], qty, Math.round(rev*100)/100, matCost]);
-    }
-
-    const sortedDates = A
+      if(!channel || !model) 
