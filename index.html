@@ -231,7 +231,7 @@ select:focus{border-color:#3b82f6}
   <div class="row r1">
     <div class="card">
       <div class="chdr">
-        Material Margin &mdash; By SKU <span class="chdr-sub">ranked by MM%</span>
+        Material Margin &mdash; By SKU <span class="chdr-sub">per unit · ranked by MM%</span>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <select id="mm-sku-dd" onchange="drawMMbySKU()" style="font-size:11px;padding:4px 7px"><option value="">All SKUs</option></select>
           <div class="mt" id="mm-sku-metric-grp">
@@ -710,24 +710,26 @@ function drawMMbySKU(rows){
   rows.forEach(function(r){
     var s=(snap.skus||[])[r[2]]||"?";
     if(sel&&s!==sel)return;
-    if(!skuData[s])skuData[s]={taxable:0,matCost:0};
+    if(!skuData[s])skuData[s]={taxable:0,matCost:0,units:0};
     skuData[s].taxable+=r[4];skuData[s].matCost+=r[5];
+    if(r[3]>0)skuData[s].units+=r[3]; // positive qty only for per-unit avg
   });
   var entries=Object.entries(skuData).map(function(e){
-    var tax=e[1].taxable,mc=e[1].matCost,mm=tax-mc;
+    var tax=e[1].taxable,mc=e[1].matCost,mm=tax-mc,u=e[1].units;
     var pct=tax!==0?(mm/tax*100):0;
-    return{sku:e[0],mmCost:mm,mmPct:pct,taxable:tax};
+    var mmPerUnit=u>0?(mm/u):0; // per-unit MM cost
+    return{sku:e[0],mmPerUnit:mmPerUnit,mmPct:pct,units:u};
   });
   // Sort by MM% descending
   entries.sort(function(a,b){return b.mmPct-a.mmPct;});
   var isCost=(mmSkuMetric==="cost");
   var labels=entries.map(function(e){return e.sku;});
-  var data=entries.map(function(e){return isCost?Math.round(e.mmCost):Math.round(e.mmPct*10)/10;});
+  var data=entries.map(function(e){return isCost?Math.round(e.mmPerUnit):Math.round(e.mmPct*10)/10;});
   var colors=entries.map(function(e){
-    var v=isCost?e.mmCost:e.mmPct;
+    var v=isCost?e.mmPerUnit:e.mmPct;
     return v>=0?"rgba(74,222,128,0.82)":"rgba(248,113,113,0.82)";
   });
-  var refLine=isCost?null:0; // zero reference for %
+  var subLabel=isCost?"per unit sold":"of taxable revenue";
   mkC("c_mm_sku",{type:"bar",data:{labels:labels,datasets:[{
     data:data,backgroundColor:colors,borderRadius:3
   }]},options:Object.assign({},OPT,{
@@ -739,7 +741,11 @@ function drawMMbySKU(rows){
     },
     plugins:{
       legend:{display:false},
-      tooltip:{callbacks:{label:function(c){return" "+(isCost?fr(c.parsed.x):c.parsed.x.toFixed(1)+"%");}}}
+      tooltip:{callbacks:{label:function(c){
+        var e=entries[c.dataIndex];
+        var main=isCost?fr(c.parsed.x):c.parsed.x.toFixed(1)+"%";
+        return[" MM "+subLabel+": "+main," Units: "+e.units.toLocaleString()];
+      }}}
     }
   })});
 }
