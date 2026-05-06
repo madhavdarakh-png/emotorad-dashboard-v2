@@ -2,39 +2,125 @@
 const https = require("https");
 const crypto = require("crypto");
 
+// ══════════════════════════════════════════════════════════════════
+// GOOGLE SHEET CONFIG
+// ══════════════════════════════════════════════════════════════════
 const SPREADSHEET_ID = "1UQ04ooxEWq8nExhu5ksVDYIaddFpzgKZO7FouwSu1rE";
-const SOURCE_GID     = 1516006436;
+const SOURCE_GID     = 1516006436; // "Apr.26" tab
 const SCOPES         = "https://www.googleapis.com/auth/spreadsheets.readonly";
 
+// ══════════════════════════════════════════════════════════════════
+// CANONICAL SKU LIST
+// ══════════════════════════════════════════════════════════════════
 const CANONICAL_SKUS = [
   "Dope", "X1", "X2", "ST-X", "Legend 07", "X3",
-  "Viper", "T-Rex Air", "T-Rex Pro", "Doodle", "EMX+", "Cargo G1", "Lil E"
+  "Viper", "T-Rex Air", "T-Rex Pro", "Doodle", "EMX+", "Cargo G1", "Lil E",
+  "Ranger", "T-Rex Smart"
 ];
 
+// ══════════════════════════════════════════════════════════════════
+// SKU NORMALIZATION MAP
+// ══════════════════════════════════════════════════════════════════
 const SKU_NORM = {
+  // Dope
   "dope": "Dope",
+  // X1 — all battery / variant combos
   "x1": "X1", "sn1": "X1",
   "x1 7.65 ah": "X1", "x1 7.65ah": "X1",
   "x1 10.2 ah": "X1", "x1 10.2ah": "X1",
+  // X2
   "x2": "X2",
+  // X3
   "x3": "X3",
+  // ST-X
   "stx": "ST-X", "st x": "ST-X", "st-x": "ST-X",
+  // Legend 07
   "legend": "Legend 07", "legend 07": "Legend 07",
+  "legend 7.65ah": "Legend 07", "legend 7.65 ah": "Legend 07",
+  "legend 10.2ah": "Legend 07", "legend 10.2 ah": "Legend 07",
+  // Viper
   "viper": "Viper",
+  // T-Rex Air
   "trex air": "T-Rex Air", "t rex air": "T-Rex Air", "t-rex air": "T-Rex Air",
-  "t rex smart": "T-Rex Air",
+  // T-Rex Smart (kept separate from T-Rex Air for COGS purposes)
+  "t rex smart": "T-Rex Smart", "trex smart": "T-Rex Smart", "t-rex smart": "T-Rex Smart",
+  // T-Rex Pro
   "t rex pro": "T-Rex Pro", "trex pro": "T-Rex Pro", "t-rex pro": "T-Rex Pro",
+  // Doodle (all variants)
   "doodle": "Doodle", "doodle v4": "Doodle", "doodle v3": "Doodle",
+  // EMX+
   "t rex+": "EMX+", "t-rex+": "EMX+", "emx+": "EMX+",
+  // Cargo G1
   "cargo": "Cargo G1", "g1": "Cargo G1", "cargo g1": "Cargo G1",
+  // Lil E
   "lil e": "Lil E",
+  // Ranger
+  "ranger": "Ranger",
 };
 
+// ══════════════════════════════════════════════════════════════════
+// COGS PER VARIANT (Rs per unit sold)
+// Key: lowercase + dashes→spaces normalised raw model name
+// ══════════════════════════════════════════════════════════════════
+const VARIANT_COGS = {
+  // T-Rex Air
+  "t rex air": 18676,
+  // T-Rex Smart (separate COGS from T-Rex Air)
+  "t rex smart": 20951, "trex smart": 20951,
+  // X1 variants
+  "x1 7.65ah": 15469, "x1 7.65 ah": 15469,
+  "x1 10.2ah": 16260, "x1 10.2 ah": 16260,
+  "x1": 15469, "sn1": 15469,           // default X1 → 7.65aH COGS
+  // Ranger
+  "ranger": 34309,
+  // Dope
+  "dope": 14352,
+  // X2
+  "x2": 15983,
+  // Doodle
+  "doodle": 32803, "doodle v3": 32803, "doodle v4": 32803,
+  // Legend variants
+  "legend 7.65ah": 16114, "legend 7.65 ah": 16114,
+  "legend 10.2ah": 17793, "legend 10.2 ah": 17793,
+  "legend": 16954, "legend 07": 16954,  // average fallback
+  // ST-X
+  "stx": 15626, "st x": 15626, "st-x": 15626,
+  // T-Rex Pro
+  "t rex pro": 31484, "trex pro": 31484,
+  // Cargo G1
+  "cargo": 32066, "cargo g1": 32066, "g1": 32066,
+  // EMX+ / T-Rex+
+  "t rex+": 27150, "emx+": 27150,
+  // Lil E
+  "lil e": 7566,
+  // Viper
+  "viper": 45833,
+};
+
+// ══════════════════════════════════════════════════════════════════
+// MATERIAL COST PER CANONICAL SKU — fallback when variant not found
+// ══════════════════════════════════════════════════════════════════
 const MATERIAL_COST_PER_SKU = {
-  "Dope":0,"X1":0,"X2":0,"ST-X":0,"Legend 07":0,"X3":0,
-  "Viper":0,"T-Rex Air":0,"T-Rex Pro":0,"Doodle":0,"EMX+":0,"Cargo G1":0,"Lil E":0,
+  "Dope":        14352,
+  "X1":          15469,
+  "X2":          15983,
+  "ST-X":        15626,
+  "Legend 07":   16954,
+  "X3":          0,
+  "Viper":       45833,
+  "T-Rex Air":   18676,
+  "T-Rex Pro":   31484,
+  "T-Rex Smart": 20951,
+  "Doodle":      32803,
+  "EMX+":        27150,
+  "Cargo G1":    32066,
+  "Lil E":       7566,
+  "Ranger":      34309,
 };
 
+// ══════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════
 const MONTHS = {
   january:1,february:2,march:3,april:4,may:5,june:6,
   july:7,august:8,september:9,october:10,november:11,december:12
@@ -111,6 +197,18 @@ function normalizeSKU(raw) {
   return raw;
 }
 
+function getCOGS(rawModel) {
+  if(!rawModel) return 0;
+  const key     = rawModel.toLowerCase().replace(/[-]+/g," ").replace(/\s+/g," ").trim();
+  const compact = rawModel.toLowerCase().replace(/[\s-]/g,"");
+  if(VARIANT_COGS[key]     !== undefined) return VARIANT_COGS[key];
+  if(VARIANT_COGS[compact] !== undefined) return VARIANT_COGS[compact];
+  return 0;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MAIN HANDLER
+// ══════════════════════════════════════════════════════════════════
 module.exports = async function(req, res) {
   res.setHeader("Cache-Control","no-store,no-cache,must-revalidate");
   res.setHeader("Access-Control-Allow-Origin","*");
@@ -123,14 +221,17 @@ module.exports = async function(req, res) {
     sa = JSON.parse(rawSA);
   } catch(parseErr) {
     return res.status(500).json({
-      error: "GOOGLE_SA_JSON parse failed: "+parseErr.message,
-      sa_length: rawSA.length, node: process.version
+      error: "GOOGLE_SA_JSON parse failed: " + parseErr.message,
+      sa_length: rawSA.length,
+      sa_preview: rawSA.slice(0,80),
+      node: process.version
     });
   }
   if(!sa || !sa.private_key || !sa.client_email) {
     return res.status(500).json({
-      error: "GOOGLE_SA_JSON missing required fields",
-      keys: sa ? Object.keys(sa) : [], node: process.version
+      error: "GOOGLE_SA_JSON missing private_key or client_email",
+      keys: sa ? Object.keys(sa) : [],
+      node: process.version
     });
   }
 
@@ -141,10 +242,10 @@ module.exports = async function(req, res) {
       "https://sheets.googleapis.com/v4/spreadsheets/"+SPREADSHEET_ID+"?fields=sheets(properties(sheetId,title))", token
     ));
     let sheetTitle = null;
-    for(const s of (meta.sheets||[])) {
+    for(const s of meta.sheets) {
       if(s.properties.sheetId===SOURCE_GID){ sheetTitle=s.properties.title; break; }
     }
-    if(!sheetTitle) throw new Error("Sheet GID "+SOURCE_GID+" not found. meta="+JSON.stringify(meta).slice(0,200));
+    if(!sheetTitle) throw new Error("Sheet GID "+SOURCE_GID+" not found");
 
     const data   = JSON.parse(await httpsGet(
       "https://sheets.googleapis.com/v4/spreadsheets/"+SPREADSHEET_ID+
@@ -152,33 +253,47 @@ module.exports = async function(req, res) {
     ));
     const values = data.values || [];
 
+    // Column indices (0-based, row 4+ is data)
+    // C=2 Channel | L=11 Invoice Date | M=12 Type | O=14 Model | R=17 Qty | T=19 Taxable Value
     const channelMap = {}, skuMap = {}, channels = [], skus = [], rows = [], dates = new Set();
 
     for(let i=4; i<values.length; i++) {
       const row = values[i];
       if(!row || row.length < 15) continue;
-      const channel = String(row[2]||"").trim();
-      const dateRaw = row[11];
-      const type    = String(row[12]||"").trim();
-      const model   = normalizeSKU(String(row[14]||"").trim());
-      const qty     = parseFloat(row[17]) || 0;
-      const rev     = parseFloat(row[19]) || 0;
-      if(!channel || !model)                      continue;
-      if(type.toLowerCase().includes("accessor")) continue;
-      if(qty===0 && rev===0)                      continue;
+
+      const channel  = String(row[2]||"").trim();
+      const dateRaw  = row[11];
+      const type     = String(row[12]||"").trim();
+      const rawModel = String(row[14]||"").trim();
+      const model    = normalizeSKU(rawModel);
+      const qty      = parseFloat(row[17]) || 0;
+      const rev      = parseFloat(row[19]) || 0;
+
+      if(!channel || !model)                        continue;
+      if(type.toLowerCase().includes("accessor"))   continue;
+      if(qty===0 && rev===0)                        continue;
+
       const dateStr = parseDateStr(dateRaw);
       if(!dateStr) continue;
+
       if(channelMap[channel]===undefined){ channelMap[channel]=channels.length; channels.push(channel); }
       if(skuMap[model]===undefined)      { skuMap[model]=skus.length;           skus.push(model);       }
       dates.add(dateStr);
-      const matCost = (MATERIAL_COST_PER_SKU[model] || 0) * qty;
-      rows.push([dateStr, channelMap[channel], skuMap[model], qty, Math.round(rev*100)/100, matCost]);
+
+      // COGS: look up by raw variant name first, then canonical fallback
+      const cogsPerUnit = getCOGS(rawModel) || (MATERIAL_COST_PER_SKU[model] || 0);
+      const matCost     = cogsPerUnit * qty;
+
+      // Row format: [date, channelIdx, skuIdx, qty, taxableValue, materialCost]
+      rows.push([dateStr, channelMap[channel], skuMap[model], qty, Math.round(rev*100)/100, Math.round(matCost*100)/100]);
     }
 
     const sortedDates = Array.from(dates).sort();
     return res.status(200).json({
       generated_at:   new Date().toISOString(),
-      channels, skus, rows,
+      channels,
+      skus,
+      rows,
       rowCount:       rows.length,
       availableYears: [...new Set(sortedDates.map(d=>d.slice(0,4)))],
       availableMonths:[...new Set(sortedDates.map(d=>d.slice(0,7)))],
