@@ -3,7 +3,7 @@ const https = require("https");
 const crypto = require("crypto");
 
 const SPREADSHEET_ID = "1UQ04ooxEWq8nExhu5ksVDYIaddFpzgKZO7FouwSu1rE";
-const SOURCE_GID     = 0;
+const SOURCE_GID     = 1516006436;
 const SCOPES         = "https://www.googleapis.com/auth/spreadsheets.readonly";
 
 const CANONICAL_SKUS = [
