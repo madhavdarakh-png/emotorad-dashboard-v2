@@ -240,7 +240,7 @@ select:focus{border-color:#3b82f6}
           </div>
         </div>
       </div>
-      <div class="cw h360"><canvas id="c_mm_sku"></canvas></div>
+      <div class="cw" id="mm-sku-wrap" style="position:relative"><canvas id="c_mm_sku"></canvas></div>
     </div>
   </div>
 
@@ -730,6 +730,9 @@ function drawMMbySKU(rows){
     return v>=0?"rgba(74,222,128,0.82)":"rgba(248,113,113,0.82)";
   });
   var subLabel=isCost?"per unit sold":"of taxable revenue";
+  // Dynamic height: 38px per SKU, min 200px
+  var wrapEl=document.getElementById("mm-sku-wrap");
+  if(wrapEl)wrapEl.style.height=Math.max(200,entries.length*38)+"px";
   mkC("c_mm_sku",{type:"bar",data:{labels:labels,datasets:[{
     data:data,backgroundColor:colors,borderRadius:3
   }]},options:Object.assign({},OPT,{
