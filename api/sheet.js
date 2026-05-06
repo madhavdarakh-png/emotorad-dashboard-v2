@@ -123,7 +123,10 @@ function getToken(sa) {
     const req  = https.request({
       hostname:"oauth2.googleapis.com", path:"/token", method:"POST",
       headers:{"Content-Type":"application/x-www-form-urlencoded","Content-Length":Buffer.byteLength(body)}
-    }, function(res){ var d=""; res.on("data",function(c){d+=c;}); res.on("end",function(){ var j=JSON.parse(d); j.access_token?resolve(j.access_token):reject(new Error(d)); }); });
+    }, function(res){ var d=""; res.on("data",function(c){d+=c;}); res.on("end",function(){
+      try { var j=JSON.parse(d); j.access_token?resolve(j.access_token):reject(new Error("No access_token: "+d.slice(0,300))); }
+      catch(e){ reject(new Error("OAuth parse error: "+d.slice(0,300))); }
+    }); });
     req.on("error",reject); req.write(body); req.end();
   });
 }
@@ -235,8 +238,4 @@ module.exports = async function(req, res) {
       rows.push([dateStr, channelMap[channel], skuMap[model], qty, Math.round(rev*100)/100, matCost]);
     }
 
-    const sortedDates = Array.from(dates).sort();
-    return res.status(200).json({
-      generated_at:   new Date().toISOString(),
-      channels,
-   
+    const sortedDates = A
