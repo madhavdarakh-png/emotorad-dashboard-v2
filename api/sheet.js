@@ -5,8 +5,8 @@ const crypto = require("crypto");
 // ══════════════════════════════════════════════════════════════════
 // GOOGLE SHEET CONFIG
 // ══════════════════════════════════════════════════════════════════
-const SPREADSHEET_ID = "1u7LvzCYxuiZ0w3IwRyCK84W64yoJ5XiIRdjKtyCYaYg";
-const SOURCE_GID     = 1516006436; // Apr.26 sheet
+const SPREADSHEET_ID = "1UQ04ooxEWq8nExhu5ksVDYIaddFpzgKZO7FouwSu1rE";
+const SOURCE_GID     = 0; // first/default sheet
 const SCOPES         = "https://www.googleapis.com/auth/spreadsheets.readonly";
 
 // ══════════════════════════════════════════════════════════════════
@@ -248,3 +248,4 @@ module.exports = async function(req, res) {
     return res.status(500).json({ error: e.message, stack: e.stack });
   }
 };
+  
