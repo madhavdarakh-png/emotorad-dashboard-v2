@@ -72,7 +72,7 @@ select:focus{border-color:#3b82f6}
 
 /* ── CHARTS ── */
 .cw{position:relative}
-.h200{height:200px}.h240{height:240px}.h280{height:280px}.h300{height:300px}.h320{height:320px}
+.h200{height:200px}.h240{height:240px}.h280{height:280px}.h300{height:300px}.h320{height:320px}.h360{height:360px}.h160{height:160px}
 
 /* ── CHANNEL TABLE ── */
 .dt2{width:100%;border-collapse:collapse;font-size:12px}
@@ -227,54 +227,52 @@ select:focus{border-color:#3b82f6}
     </div>
   </div>
 
-  <!-- Row MM: Material Margin Analysis -->
-  <div class="row r3">
-    <!-- MM by SKU -->
+  <!-- Row MM-1: MM by SKU — full width horizontal ranked chart -->
+  <div class="row r1">
     <div class="card">
       <div class="chdr">
-        Material Margin &mdash; By SKU
+        Material Margin &mdash; By SKU <span class="chdr-sub">ranked by MM%</span>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <select id="mm-sku-dd" onchange="drawMMbySKU()" style="font-size:11px;padding:4px 7px"><option value="">All SKUs</option></select>
-          <div class="mt" id="mm-sku-per-grp">
-            <button class="mtb active" data-p="day"   onclick="setMMSkuPer(this)">Day</button>
-            <button class="mtb"        data-p="week"  onclick="setMMSkuPer(this)">Week</button>
-            <button class="mtb"        data-p="month" onclick="setMMSkuPer(this)">Month</button>
+          <div class="mt" id="mm-sku-metric-grp">
+            <button class="mtb active" data-m="pct"  onclick="setMMSkuMetric(this)">% Margin</button>
+            <button class="mtb"        data-m="cost" onclick="setMMSkuMetric(this)">₹ Cost</button>
           </div>
         </div>
       </div>
-      <div class="cw h280"><canvas id="c_mm_sku"></canvas></div>
+      <div class="cw h360"><canvas id="c_mm_sku"></canvas></div>
     </div>
+  </div>
 
-    <!-- Total MM -->
+  <!-- Row MM-2: Total MM KPI + Channel × MM side by side -->
+  <div class="row r2">
+    <!-- Total MM — KPI + trend -->
     <div class="card">
       <div class="chdr">
-        Material Margin &mdash; Total (All SKUs)
+        Material Margin &mdash; Total
         <div class="mt" id="mm-tot-per-grp">
           <button class="mtb active" data-p="day"   onclick="setMMTotPer(this)">Day</button>
           <button class="mtb"        data-p="week"  onclick="setMMTotPer(this)">Week</button>
           <button class="mtb"        data-p="month" onclick="setMMTotPer(this)">Month</button>
         </div>
       </div>
-      <div class="cw h280"><canvas id="c_mm_tot"></canvas></div>
+      <div style="display:flex;gap:28px;align-items:baseline;margin-bottom:14px;padding:0 2px">
+        <div>
+          <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;font-weight:700">Blended MM%</div>
+          <div id="mm-tot-pct" style="font-size:38px;font-weight:800;color:#4ade80;line-height:1">--</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;font-weight:700">Total MM (₹)</div>
+          <div id="mm-tot-abs" style="font-size:22px;font-weight:700;color:#94a3b8;line-height:1">--</div>
+        </div>
+      </div>
+      <div class="cw h160"><canvas id="c_mm_tot"></canvas></div>
     </div>
 
-    <!-- Channel × MM card -->
+    <!-- Channel × MM — channels sorted by MM% -->
     <div class="card">
       <div class="chdr">
-        Channel &times; MM
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <select id="mm-ch-dd" onchange="drawMMChan()" style="font-size:11px;padding:4px 7px">
-            <option value="">All Channels</option>
-            <option value="Offline">Offline</option>
-            <option value="Online">Online</option>
-            <option value="B2B">B2B</option>
-          </select>
-          <div class="mt" id="mm-ch-per-grp">
-            <button class="mtb active" data-p="day"   onclick="setMMChanPer(this)">Day</button>
-            <button class="mtb"        data-p="week"  onclick="setMMChanPer(this)">Week</button>
-            <button class="mtb"        data-p="month" onclick="setMMChanPer(this)">Month</button>
-          </div>
-        </div>
+        Channel &times; MM <span class="chdr-sub">sorted by MM%</span>
       </div>
       <div class="cw h280"><canvas id="c_mm_ch"></canvas></div>
     </div>
@@ -424,10 +422,8 @@ var M = {tM:"revenue",mM:"revenue",sM:"revenue",cdM:"units",sdM:"units",spM:"rev
 
 // Material Margin display mode
 var mmMode = "value"; // "value" | "percent"
-var mmSkuPer = "day";
 var mmTotPer = "day";
-var mmSkuMetric = "cost"; // "cost" | "pct"
-var mmChanPer  = "day";
+var mmSkuMetric = "pct"; // default to % view
 
 // Colours
 var CC  = {Online:"#3b82f6",Offline:"#10b981",B2B:"#f59e0b"};
@@ -488,9 +484,8 @@ function setPerfPer(el){activateMtb(el);perfPer=el.dataset.p;drawSKUPerf(getR())
 function setPDCPer(el){activateMtb(el);pdcPer=el.dataset.p;drawPD(getR());}
 function setPDSPer(el){activateMtb(el);pdsPer=el.dataset.p;drawPD(getR());}
 function setMMMode(el){activateMtb(el);mmMode=el.dataset.mm;drawMM(getR());}
-function setMMSkuPer(el){activateMtb(el);mmSkuPer=el.dataset.p;drawMMbySKU(getR());}
 function setMMSkuMetric(el){activateMtb(el);mmSkuMetric=el.dataset.m;drawMMbySKU(getR());}
-function setMMChanPer(el){activateMtb(el);mmChanPer=el.dataset.p;drawMMChan(getR());}
+
 function setMMTotPer(el){activateMtb(el);mmTotPer=el.dataset.p;drawMMTotal(getR());}
 
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
@@ -621,14 +616,19 @@ function renderAll(){
 // KPI
 // ══════════════════════════════════════════════════════════════
 function drawKPI(rows){
-  var rev=0,units=0,matCostTotal=0;
-  rows.forEach(function(r){rev+=r[4];units+=r[3];matCostTotal+=r[5];});
+  var rev=0,units=0,matCostTotal=0,saleRev=0,saleMatCost=0,saleUnits=0;
+  rows.forEach(function(r){
+    rev+=r[4];units+=r[3];matCostTotal+=r[5];
+    // Positive-qty rows only for per-unit avg (excludes returns)
+    if(r[3]>0){saleRev+=r[4];saleMatCost+=r[5];saleUnits+=r[3];}
+  });
   var mmCostTotal=rev-matCostTotal;
+  var saleMM=saleRev-saleMatCost;
   var mmPct=rev>0?(mmCostTotal/rev*100):0;
   document.getElementById("kr").textContent=fr(rev);
   document.getElementById("ku").textContent=units.toLocaleString("en-IN");
   document.getElementById("ka").textContent=units>0?fr(rev/units):"--";
-  document.getElementById("kmmc").textContent=units>0?fr(mmCostTotal/units):"--";
+  document.getElementById("kmmc").textContent=saleUnits>0?fr(saleMM/saleUnits):"--";
   document.getElementById("kmmpc").textContent=mmPct.toFixed(1)+"%";
   document.getElementById("kmmpc").className="kv "+(mmPct>=0?"mm-pos":"mm-neg");
   document.getElementById("krs").textContent=aChan==="all"?"all channels":aChan+(aSKU?" · "+aSKU:"");
@@ -706,135 +706,133 @@ function drawMix(rows){
 function drawMMbySKU(rows){
   rows=rows||getR();
   var sel=document.getElementById("mm-sku-dd").value;
-  var grp={};
+  var skuData={};
   rows.forEach(function(r){
     var s=(snap.skus||[])[r[2]]||"?";
     if(sel&&s!==sel)return;
-    var k=pkey(r[0],mmSkuPer);
+    if(!skuData[s])skuData[s]={taxable:0,matCost:0};
+    skuData[s].taxable+=r[4];skuData[s].matCost+=r[5];
+  });
+  var entries=Object.entries(skuData).map(function(e){
+    var tax=e[1].taxable,mc=e[1].matCost,mm=tax-mc;
+    var pct=tax!==0?(mm/tax*100):0;
+    return{sku:e[0],mmCost:mm,mmPct:pct,taxable:tax};
+  });
+  // Sort by MM% descending
+  entries.sort(function(a,b){return b.mmPct-a.mmPct;});
+  var isCost=(mmSkuMetric==="cost");
+  var labels=entries.map(function(e){return e.sku;});
+  var data=entries.map(function(e){return isCost?Math.round(e.mmCost):Math.round(e.mmPct*10)/10;});
+  var colors=entries.map(function(e){
+    var v=isCost?e.mmCost:e.mmPct;
+    return v>=0?"rgba(74,222,128,0.82)":"rgba(248,113,113,0.82)";
+  });
+  var refLine=isCost?null:0; // zero reference for %
+  mkC("c_mm_sku",{type:"bar",data:{labels:labels,datasets:[{
+    data:data,backgroundColor:colors,borderRadius:3
+  }]},options:Object.assign({},OPT,{
+    indexAxis:"y",
+    scales:{
+      x:{grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10},callback:function(v){return isCost?fr(v):v.toFixed(0)+"%";}},
+        ...(isCost?{}:{min:Math.min(0,Math.min.apply(null,data)-5)})},
+      y:{grid:{color:"#1e293b"},ticks:{color:"#94a3b8",font:{size:11},mirror:false}}
+    },
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:function(c){return" "+(isCost?fr(c.parsed.x):c.parsed.x.toFixed(1)+"%");}}}
+    }
+  })});
+}
+
+// ══════════════════════════════════════════════════════════════
+// MATERIAL MARGIN — TOTAL: KPI numbers + MM% trend line
+// ══════════════════════════════════════════════════════════════
+function drawMMTotal(rows){
+  rows=rows||getR();
+  // Aggregate totals
+  var totTax=0,totMat=0;
+  rows.forEach(function(r){totTax+=r[4];totMat+=r[5];});
+  var totMM=totTax-totMat;
+  var mmPct=totTax!==0?(totMM/totTax*100):0;
+  // Update KPI elements
+  var pctEl=document.getElementById("mm-tot-pct");
+  var absEl=document.getElementById("mm-tot-abs");
+  if(pctEl){pctEl.textContent=mmPct.toFixed(1)+"%";pctEl.style.color=mmPct>=0?"#4ade80":"#f87171";}
+  if(absEl){absEl.textContent=fr(totMM);absEl.style.color=totMM>=0?"#94a3b8":"#f87171";}
+  // Trend line (MM% over time)
+  var grp={};
+  rows.forEach(function(r){
+    var k=pkey(r[0],mmTotPer);
     if(!grp[k])grp[k]={taxable:0,matCost:0};
     grp[k].taxable+=r[4];grp[k].matCost+=r[5];
   });
   var lb=Object.keys(grp).sort();
-  var costData=lb.map(function(k){return Math.round(grp[k].taxable-grp[k].matCost);});
-  var pctData=lb.map(function(k){var t=grp[k].taxable,mc=grp[k].matCost;return t>0?Math.round((t-mc)/t*10000)/100:0;});
-  mkC("c_mm_sku",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:[
-    {type:"bar",label:"MM Cost (₹)",data:costData,backgroundColor:"rgba(99,102,241,0.8)",yAxisID:"y",borderRadius:3,order:2},
-    {type:"line",label:"MM %",data:pctData,borderColor:"#f59e0b",backgroundColor:"transparent",yAxisID:"y1",tension:0.3,pointRadius:3,borderWidth:2.5,order:1}
-  ]},options:Object.assign({},OPT,{
+  var pctData=lb.map(function(k){
+    var t=grp[k].taxable,mc=grp[k].matCost;
+    return t!==0?Math.round((t-mc)/t*1000)/10:null;
+  });
+  var trendColor=mmPct>=0?"#4ade80":"#f87171";
+  mkC("c_mm_tot",{type:"line",data:{labels:lb.map(fmtLabel),datasets:[{
+    data:pctData,borderColor:trendColor,
+    backgroundColor:mmPct>=0?"rgba(74,222,128,0.08)":"rgba(248,113,113,0.08)",
+    fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:trendColor,borderWidth:2.5,spanGaps:true
+  }]},options:Object.assign({},OPT,{
     scales:{
       x:Object.assign({},GX,{ticks:Object.assign({},GX.ticks,{maxRotation:50})}),
-      y:{position:"left",grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10},callback:function(v){return fr(v);}}},
-      y1:{position:"right",min:0,max:100,grid:{drawOnChartArea:false},ticks:{color:"#f59e0b",font:{size:10},callback:function(v){return v.toFixed(0)+"%";}}}
+      y:{grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10},callback:function(v){return v+"%";}}}
     },
-    plugins:{
-      legend:{position:"top",labels:{color:"#94a3b8",font:{size:11},boxWidth:10}},
-      tooltip:{mode:"index",intersect:false,callbacks:{label:function(c){return" "+c.dataset.label+": "+(c.dataset.yAxisID==="y1"?c.parsed.y.toFixed(1)+"%":fr(c.parsed.y));}}}
-    }
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return" MM%: "+(c.parsed.y!==null?c.parsed.y.toFixed(1)+"%":"--");}}}}
   })});
 }
 
-// ══════════════════════════════════════════════════════════════
-// MATERIAL MARGIN — TOTAL (stacked bars by SKU + MM% line)
-// ══════════════════════════════════════════════════════════════
-function drawMMTotal(rows){
-  rows=rows||getR();
-  var skuTotals={};
-  rows.forEach(function(r){var s=(snap.skus||[])[r[2]]||"?";if(!skuTotals[s])skuTotals[s]=0;skuTotals[s]+=r[4]-r[5];});
-  var topSkus=Object.entries(skuTotals).sort(function(a,b){return b[1]-a[1];}).slice(0,8).map(function(e){return e[0];});
-  var grp={};
-  rows.forEach(function(r){
-    var s=(snap.skus||[])[r[2]]||"?";
-    var k=pkey(r[0],mmTotPer);
-    if(!grp[k])grp[k]={taxable:0,matCost:0,skus:{}};
-    grp[k].taxable+=r[4];grp[k].matCost+=r[5];
-    if(topSkus.indexOf(s)>=0){
-      if(!grp[k].skus[s])grp[k].skus[s]={taxable:0,matCost:0};
-      grp[k].skus[s].taxable+=r[4];grp[k].skus[s].matCost+=r[5];
-    }
-  });
-  var lb=Object.keys(grp).sort();
-  var pctData=lb.map(function(k){var t=grp[k].taxable,mc=grp[k].matCost;return t>0?Math.round((t-mc)/t*10000)/100:0;});
-  var ds=topSkus.map(function(s,i){return{
-    type:"bar",label:s,yAxisID:"y",stack:"s",order:2,borderRadius:1,
-    backgroundColor:SC[i%SC.length],
-    data:lb.map(function(k){var v=grp[k].skus[s];return v?Math.round(v.taxable-v.matCost):0;})
-  };});
-  ds.push({type:"line",label:"MM %",data:pctData,borderColor:"#f59e0b",backgroundColor:"transparent",yAxisID:"y1",tension:0.3,pointRadius:3,borderWidth:2.5,order:1});
-  mkC("c_mm_tot",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:ds},options:Object.assign({},OPT,{
-    scales:{
-      x:Object.assign({},GX,{stacked:true,ticks:Object.assign({},GX.ticks,{maxRotation:50})}),
-      y:{position:"left",stacked:true,grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10},callback:function(v){return fr(v);}}},
-      y1:{position:"right",min:0,max:100,grid:{drawOnChartArea:false},ticks:{color:"#f59e0b",font:{size:10},callback:function(v){return v.toFixed(0)+"%";}}}
-    },
-    plugins:{
-      legend:{position:"top",labels:{color:"#94a3b8",font:{size:10},boxWidth:8,padding:6}},
-      tooltip:{mode:"index",intersect:false,callbacks:{label:function(c){return" "+c.dataset.label+": "+(c.dataset.yAxisID==="y1"?c.parsed.y.toFixed(1)+"%":fr(c.parsed.y));}}}
-    }
-  })});
-}
-
-// Legacy stub (no longer needed but kept for safety)
 function drawMM(rows){}
 
 
 // ══════════════════════════════════════════════════════════════
-// CHANNEL × MM — grouped bars MM cost per channel + MM% line
+// CHANNEL × MM — channels sorted by MM%, bars + % dot
 // ══════════════════════════════════════════════════════════════
 function drawMMChan(rows){
   rows=rows||getR();
-  var selCh=document.getElementById("mm-ch-dd").value;
-  var chs=snap.channels||[],chMap={};
-  chs.forEach(function(ch){chMap[ch]={};});
+  var chs=snap.channels||[],chTotals={};
+  chs.forEach(function(ch){chTotals[ch]={taxable:0,matCost:0};});
   rows.forEach(function(r){
     var ch=chs[r[1]]||"?";
-    if(selCh&&ch!==selCh)return;
-    var k=pkey(r[0],mmChanPer);
-    if(!chMap[ch])chMap[ch]={};
-    if(!chMap[ch][k])chMap[ch][k]={taxable:0,matCost:0};
-    chMap[ch][k].taxable+=r[4];chMap[ch][k].matCost+=r[5];
+    if(!chTotals[ch])chTotals[ch]={taxable:0,matCost:0};
+    chTotals[ch].taxable+=r[4];chTotals[ch].matCost+=r[5];
   });
-  var ks={};Object.values(chMap).forEach(function(mp){Object.keys(mp).forEach(function(k){ks[k]=1;});});
-  var lb=Object.keys(ks).sort();
+  // Filter to channels with data, sort by MM% descending
   var activeChs=chs.filter(function(ch){
-    if(selCh&&ch!==selCh)return false;
-    return lb.some(function(k){return chMap[ch]&&chMap[ch][k];});
+    return chTotals[ch]&&(chTotals[ch].taxable!==0||chTotals[ch].matCost!==0);
+  }).sort(function(a,b){
+    var pa=chTotals[a].taxable!==0?(chTotals[a].taxable-chTotals[a].matCost)/chTotals[a].taxable:0;
+    var pb=chTotals[b].taxable!==0?(chTotals[b].taxable-chTotals[b].matCost)/chTotals[b].taxable:0;
+    return pb-pa;
   });
-
-  var datasets;
-  if(selCh){
-    // Single channel: bars = MM Cost, line = MM% (clean dual-axis)
-    var ch=selCh,col=CC[ch]||"#6366f1";
-    var costData=lb.map(function(k){var v=chMap[ch]&&chMap[ch][k];return v?Math.round(v.taxable-v.matCost):0;});
-    var pctData=lb.map(function(k){var v=chMap[ch]&&chMap[ch][k];if(!v||!v.taxable)return null;return Math.round((v.taxable-v.matCost)/v.taxable*10000)/100;});
-    datasets=[
-      {type:"bar", label:"MM Cost (₹)",data:costData,backgroundColor:col+"BB",yAxisID:"y",borderRadius:2,order:2},
-      {type:"line",label:"MM %",       data:pctData, borderColor:col,backgroundColor:"transparent",yAxisID:"y1",tension:0.3,pointRadius:3,borderWidth:2.5,order:1,spanGaps:true}
-    ];
-  } else {
-    // All channels: grouped bars + lines per channel
-    var barDS=activeChs.map(function(ch,i){return{
-      type:"bar",label:ch+" MM (₹)",
-      data:lb.map(function(k){var v=chMap[ch]&&chMap[ch][k];return v?Math.round(v.taxable-v.matCost):0;}),
-      backgroundColor:(CC[ch]||SC[i])+"CC",yAxisID:"y",borderRadius:2,order:2
-    };});
-    var lineDS=activeChs.map(function(ch,i){return{
-      type:"line",label:ch+" MM%",
-      data:lb.map(function(k){var v=chMap[ch]&&chMap[ch][k];if(!v||!v.taxable)return null;return Math.round((v.taxable-v.matCost)/v.taxable*10000)/100;}),
-      borderColor:CC[ch]||SC[i],backgroundColor:"transparent",
-      yAxisID:"y1",tension:0.3,pointRadius:3,borderWidth:2,order:1,spanGaps:true
-    };});
-    datasets=barDS.concat(lineDS);
-  }
-
-  mkC("c_mm_ch",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:datasets},
-    options:Object.assign({},OPT,{scales:{
-      x:Object.assign({},GX,{ticks:Object.assign({},GX.ticks,{maxRotation:50})}),
+  var mmCosts=activeChs.map(function(ch){return Math.round(chTotals[ch].taxable-chTotals[ch].matCost);});
+  var mmPcts=activeChs.map(function(ch){
+    var t=chTotals[ch].taxable;
+    return t!==0?Math.round((chTotals[ch].taxable-chTotals[ch].matCost)/t*1000)/10:0;
+  });
+  var barColors=activeChs.map(function(ch,i){
+    var mm=chTotals[ch].taxable-chTotals[ch].matCost;
+    return mm>=0?((CC[ch]||SC[i])+"CC"):"rgba(248,113,113,0.8)";
+  });
+  mkC("c_mm_ch",{type:"bar",data:{labels:activeChs,datasets:[
+    {type:"bar",label:"MM Cost (₹)",data:mmCosts,backgroundColor:barColors,yAxisID:"y",borderRadius:4,order:2},
+    {type:"line",label:"MM %",data:mmPcts,borderColor:"#f59e0b",backgroundColor:"transparent",
+     yAxisID:"y1",tension:0,pointRadius:8,pointBackgroundColor:mmPcts.map(function(v){return v>=0?"#f59e0b":"#f87171";}),
+     borderWidth:0,order:1,showLine:false}
+  ]},options:Object.assign({},OPT,{
+    scales:{
+      x:Object.assign({},GX),
       y:{position:"left",grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10},callback:function(v){return fr(v);}}},
-      y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:"#94a3b8",font:{size:10},callback:function(v){return v+"%";}},min:0}
-    },plugins:{
+      y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:"#f59e0b",font:{size:10},callback:function(v){return v+"%";}}}
+    },
+    plugins:{
       legend:{position:"top",labels:{color:"#94a3b8",font:{size:11},boxWidth:10}},
-      tooltip:{mode:"index",intersect:false,callbacks:{label:function(c){return" "+c.dataset.label+": "+(c.dataset.yAxisID==="y1"?(c.parsed.y!==null?c.parsed.y.toFixed(1)+"%":"--"):fr(c.parsed.y));}}}
-    }})});
+      tooltip:{callbacks:{label:function(c){return" "+c.dataset.label+": "+(c.dataset.yAxisID==="y1"?c.parsed.y.toFixed(1)+"%":fr(c.parsed.y));}}}
+    }
+  })});
 }
 // ══════════════════════════════════════════════════════════════
 // TOP 10 SKUs — STACKED BAR (uses topPer)
