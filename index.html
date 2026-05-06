@@ -262,10 +262,18 @@ select:focus{border-color:#3b82f6}
     <div class="card">
       <div class="chdr">
         Channel &times; MM
-        <div class="mt" id="mm-ch-per-grp">
-          <button class="mtb active" data-p="day"   onclick="setMMChanPer(this)">Day</button>
-          <button class="mtb"        data-p="week"  onclick="setMMChanPer(this)">Week</button>
-          <button class="mtb"        data-p="month" onclick="setMMChanPer(this)">Month</button>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <select id="mm-ch-dd" onchange="drawMMChan()" style="font-size:11px;padding:4px 7px">
+            <option value="">All Channels</option>
+            <option value="Offline">Offline</option>
+            <option value="Online">Online</option>
+            <option value="B2B">B2B</option>
+          </select>
+          <div class="mt" id="mm-ch-per-grp">
+            <button class="mtb active" data-p="day"   onclick="setMMChanPer(this)">Day</button>
+            <button class="mtb"        data-p="week"  onclick="setMMChanPer(this)">Week</button>
+            <button class="mtb"        data-p="month" onclick="setMMChanPer(this)">Month</button>
+          </div>
         </div>
       </div>
       <div class="cw h280"><canvas id="c_mm_ch"></canvas></div>
@@ -774,10 +782,12 @@ function drawMM(rows){}
 // ══════════════════════════════════════════════════════════════
 function drawMMChan(rows){
   rows=rows||getR();
+  var selCh=document.getElementById("mm-ch-dd").value;
   var chs=snap.channels||[],chMap={};
   chs.forEach(function(ch){chMap[ch]={};});
   rows.forEach(function(r){
     var ch=chs[r[1]]||"?";
+    if(selCh&&ch!==selCh)return;
     var k=pkey(r[0],mmChanPer);
     if(!chMap[ch])chMap[ch]={};
     if(!chMap[ch][k])chMap[ch][k]={taxable:0,matCost:0};
@@ -785,27 +795,44 @@ function drawMMChan(rows){
   });
   var ks={};Object.values(chMap).forEach(function(mp){Object.keys(mp).forEach(function(k){ks[k]=1;});});
   var lb=Object.keys(ks).sort();
-  var activeChs=chs.filter(function(ch){return lb.some(function(k){return chMap[ch]&&chMap[ch][k];});});
-  // Datasets: one bar series per channel (MM cost) + one line per channel (MM%)
-  var barDS=activeChs.map(function(ch,i){return{
-    type:"bar",label:ch+" MM (₹)",
-    data:lb.map(function(k){var v=chMap[ch]&&chMap[ch][k];return v?Math.round(v.taxable-v.matCost):0;}),
-    backgroundColor:(CC[ch]||SC[i])+"CC",
-    yAxisID:"y",borderRadius:2,order:2
-  };});
-  var lineDS=activeChs.map(function(ch,i){return{
-    type:"line",label:ch+" MM%",
-    data:lb.map(function(k){var v=chMap[ch]&&chMap[ch][k];if(!v||!v.taxable)return null;return Math.round((v.taxable-v.matCost)/v.taxable*10000)/100;}),
-    borderColor:CC[ch]||SC[i],backgroundColor:"transparent",
-    yAxisID:"y1",tension:0.3,pointRadius:3,borderWidth:2,order:1,spanGaps:true
-  };});
-  mkC("c_mm_ch",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:barDS.concat(lineDS)},
+  var activeChs=chs.filter(function(ch){
+    if(selCh&&ch!==selCh)return false;
+    return lb.some(function(k){return chMap[ch]&&chMap[ch][k];});
+  });
+
+  var datasets;
+  if(selCh){
+    // Single channel: bars = MM Cost, line = MM% (clean dual-axis)
+    var ch=selCh,col=CC[ch]||"#6366f1";
+    var costData=lb.map(function(k){var v=chMap[ch]&&chMap[ch][k];return v?Math.round(v.taxable-v.matCost):0;});
+    var pctData=lb.map(function(k){var v=chMap[ch]&&chMap[ch][k];if(!v||!v.taxable)return null;return Math.round((v.taxable-v.matCost)/v.taxable*10000)/100;});
+    datasets=[
+      {type:"bar", label:"MM Cost (₹)",data:costData,backgroundColor:col+"BB",yAxisID:"y",borderRadius:2,order:2},
+      {type:"line",label:"MM %",       data:pctData, borderColor:col,backgroundColor:"transparent",yAxisID:"y1",tension:0.3,pointRadius:3,borderWidth:2.5,order:1,spanGaps:true}
+    ];
+  } else {
+    // All channels: grouped bars + lines per channel
+    var barDS=activeChs.map(function(ch,i){return{
+      type:"bar",label:ch+" MM (₹)",
+      data:lb.map(function(k){var v=chMap[ch]&&chMap[ch][k];return v?Math.round(v.taxable-v.matCost):0;}),
+      backgroundColor:(CC[ch]||SC[i])+"CC",yAxisID:"y",borderRadius:2,order:2
+    };});
+    var lineDS=activeChs.map(function(ch,i){return{
+      type:"line",label:ch+" MM%",
+      data:lb.map(function(k){var v=chMap[ch]&&chMap[ch][k];if(!v||!v.taxable)return null;return Math.round((v.taxable-v.matCost)/v.taxable*10000)/100;}),
+      borderColor:CC[ch]||SC[i],backgroundColor:"transparent",
+      yAxisID:"y1",tension:0.3,pointRadius:3,borderWidth:2,order:1,spanGaps:true
+    };});
+    datasets=barDS.concat(lineDS);
+  }
+
+  mkC("c_mm_ch",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:datasets},
     options:Object.assign({},OPT,{scales:{
       x:Object.assign({},GX,{ticks:Object.assign({},GX.ticks,{maxRotation:50})}),
       y:{position:"left",grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10},callback:function(v){return fr(v);}}},
-      y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:"#f59e0b",font:{size:10},callback:function(v){return v+"%";}},min:0}
+      y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:"#94a3b8",font:{size:10},callback:function(v){return v+"%";}},min:0}
     },plugins:{
-      legend:{position:"top",labels:{color:"#94a3b8",font:{size:11},boxWidth:10,filter:function(item){return item.text.indexOf("MM%")>-1||activeChs.length<4;}}},
+      legend:{position:"top",labels:{color:"#94a3b8",font:{size:11},boxWidth:10}},
       tooltip:{mode:"index",intersect:false,callbacks:{label:function(c){return" "+c.dataset.label+": "+(c.dataset.yAxisID==="y1"?(c.parsed.y!==null?c.parsed.y.toFixed(1)+"%":"--"):fr(c.parsed.y));}}}
     }})});
 }
