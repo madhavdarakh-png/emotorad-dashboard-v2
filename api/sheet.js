@@ -140,9 +140,18 @@ function httpsGet(url, token) {
 }
 
 function parseDateStr(s) {
+  // Handle Google Sheets date serial numbers (numeric, days since Dec 30 1899)
+  const n = typeof s === "number" ? s : (typeof s === "string" && /^\d+(\.\d+)?$/.test(s.trim()) ? parseFloat(s.trim()) : NaN);
+  if(!isNaN(n) && n > 1000 && n < 200000) {
+    const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(n) * 86400000);
+    return d.toISOString().slice(0, 10);
+  }
   s = String(s||"").trim();
   // Already YYYY-MM-DD
   if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // DD-MM-YYYY or DD/MM/YYYY
+  const dmy = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+  if(dmy) return dmy[3]+"-"+String(parseInt(dmy[2])).padStart(2,"0")+"-"+String(parseInt(dmy[1])).padStart(2,"0");
   // "April 2 2026" or "April 2, 2026"
   const m = s.match(/^(\w+)\s+(\d+)[,\s]+(\d{4})$/i);
   if(!m) return null;
@@ -200,7 +209,7 @@ module.exports = async function(req, res) {
 
     for(let i=4; i<values.length; i++) {
       const row = values[i];
-      if(!row || row.length < 20) continue;
+      if(!row || row.length < 15) continue;
 
       const channel = String(row[2]||"").trim();
       const dateRaw = row[11];
@@ -230,22 +239,4 @@ module.exports = async function(req, res) {
     return res.status(200).json({
       generated_at:   new Date().toISOString(),
       channels,
-      skus,
-      rows,
-      rowCount:       rows.length,
-      availableYears: [...new Set(sortedDates.map(d=>d.slice(0,4)))],
-      availableMonths:[...new Set(sortedDates.map(d=>d.slice(0,7)))],
-      availableDays:  sortedDates,
-      sourceSheetId:  SPREADSHEET_ID,
-      sourceGid:      SOURCE_GID,
-      sheetTitle,
-      // Expose material cost config so dashboard can display it
-      materialCostConfig: MATERIAL_COST_PER_SKU,
-      canonicalSkus:      CANONICAL_SKUS,
-    });
-
-  } catch(e) {
-    return res.status(500).json({ error: e.message, stack: e.stack });
-  }
-};
-  
+   
