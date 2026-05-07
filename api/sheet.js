@@ -282,8 +282,8 @@ module.exports = async function(req, res) {
       dates.add(dateStr);
 
       // Track raw variant aggregates for split ASP reporting
-      const varKey = key; // normalized raw key for variant grouping
-      if(!variantMap[varKey]) variantMap[varKey]={canonical:model,qty:0,rev:0,matCost:0};
+      const varKey = rawModel.toLowerCase().replace(/[-]+/g," ").replace(/\s+/g," ").trim();
+      if(!variantMap[varKey]) variantMap[varKey]={canonical:model,qty:0,rev:0};
       variantMap[varKey].qty+=qty; variantMap[varKey].rev+=Math.round(rev*100)/100;
 
       // COGS: look up by raw variant name first, then canonical fallback
