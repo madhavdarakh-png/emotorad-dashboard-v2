@@ -255,7 +255,7 @@ module.exports = async function(req, res) {
 
     // Column indices (0-based, row 4+ is data)
     // C=2 Channel | L=11 Invoice Date | M=12 Type | O=14 Model | R=17 Qty | T=19 Taxable Value
-    const channelMap = {}, skuMap = {}, channels = [], skus = [], rows = [], dates = new Set();
+    const channelMap = {}, skuMap = {}, channels = [], skus = [], rows = [], dates = new Set(), variantMap = {};
 
     for(let i=4; i<values.length; i++) {
       const row = values[i];
@@ -281,6 +281,11 @@ module.exports = async function(req, res) {
       if(skuMap[model]===undefined)      { skuMap[model]=skus.length;           skus.push(model);       }
       dates.add(dateStr);
 
+      // Track raw variant aggregates for split ASP reporting
+      const varKey = key; // normalized raw key for variant grouping
+      if(!variantMap[varKey]) variantMap[varKey]={canonical:model,qty:0,rev:0,matCost:0};
+      variantMap[varKey].qty+=qty; variantMap[varKey].rev+=Math.round(rev*100)/100;
+
       // COGS: look up by raw variant name first, then canonical fallback
       const cogsPerUnit = getCOGS(rawModel) || (MATERIAL_COST_PER_SKU[model] || 0);
       const matCost     = cogsPerUnit * qty;
@@ -299,6 +304,7 @@ module.exports = async function(req, res) {
       availableYears: [...new Set(sortedDates.map(d=>d.slice(0,4)))],
       availableMonths:[...new Set(sortedDates.map(d=>d.slice(0,7)))],
       availableDays:  sortedDates,
+      variantData:    variantMap,
       sourceSheetId:  SPREADSHEET_ID,
       sourceGid:      SOURCE_GID,
       sheetTitle,
