@@ -94,7 +94,7 @@ const VARIANT_COGS = {
   // Lil E
   "lil e": 7566,
   // Viper
-  "viper": 41579,
+  "viper": 45833,
 };
 
 // ══════════════════════════════════════════════════════════════════
@@ -107,7 +107,7 @@ const MATERIAL_COST_PER_SKU = {
   "ST-X":        15626,
   "Legend 07":   16954,
   "X3":          0,
-  "Viper":       41579,
+  "Viper":       45833,
   "T-Rex Air":   18676,
   "T-Rex Pro":   31484,
   "T-Rex Smart": 20951,
@@ -271,6 +271,7 @@ module.exports = async function(req, res) {
 
       if(!channel || !model)                        continue;
       if(type.toLowerCase().includes("accessor"))   continue;
+      if(model.toLowerCase().includes("jetflo"))      continue;  // excluded per config
       if(qty===0 && rev===0)                        continue;
 
       const dateStr = parseDateStr(dateRaw);
