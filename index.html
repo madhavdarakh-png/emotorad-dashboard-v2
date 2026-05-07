@@ -256,25 +256,30 @@ select:focus{border-color:#3b82f6}
           <button class="mtb"        data-p="month" onclick="setMMTotPer(this)">Month</button>
         </div>
       </div>
-      <div style="display:flex;gap:28px;align-items:baseline;margin-bottom:14px;padding:0 2px">
-        <div>
-          <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;font-weight:700">Blended MM%</div>
-          <div id="mm-tot-pct" style="font-size:38px;font-weight:800;color:#4ade80;line-height:1">--</div>
-        </div>
-        <div>
-          <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;font-weight:700">Total MM (₹)</div>
-          <div id="mm-tot-abs" style="font-size:22px;font-weight:700;color:#94a3b8;line-height:1">--</div>
-        </div>
-      </div>
-      <div class="cw h160"><canvas id="c_mm_tot"></canvas></div>
+      <div id="mm-tot-stat" style="font-size:11px;color:#64748b;margin-bottom:10px">--</div>
+      <div class="cw h240"><canvas id="c_mm_tot"></canvas></div>
     </div>
 
     <!-- Channel × MM — channels sorted by MM% -->
     <div class="card">
       <div class="chdr">
-        Channel &times; MM <span class="chdr-sub">sorted by MM%</span>
+        Channel &times; MM
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <select id="mm-chan-dd" onchange="drawMMChan()" style="font-size:11px;padding:4px 7px">
+            <option value="all">All Channels</option>
+            <option value="Online">Online</option>
+            <option value="Offline">Offline</option>
+            <option value="B2B">B2B</option>
+          </select>
+          <div class="mt" id="mm-chan-per-grp">
+            <button class="mtb active" data-p="day"   onclick="setMMChanPer(this)">Day</button>
+            <button class="mtb"        data-p="week"  onclick="setMMChanPer(this)">Week</button>
+            <button class="mtb"        data-p="month" onclick="setMMChanPer(this)">Month</button>
+          </div>
+        </div>
       </div>
-      <div class="cw h280"><canvas id="c_mm_ch"></canvas></div>
+      <div id="mm-chan-stat" style="font-size:11px;color:#64748b;margin-bottom:10px">--</div>
+      <div class="cw h240"><canvas id="c_mm_ch"></canvas></div>
     </div>
   </div>
 
@@ -422,6 +427,7 @@ var M = {tM:"revenue",mM:"revenue",sM:"revenue",cdM:"units",sdM:"units",spM:"rev
 
 // Material Margin display mode
 var mmMode = "value"; // "value" | "percent"
+var mmChanPer = "day";   // Channel × MM period
 var mmTotPer = "day";
 var mmSkuMetric = "pct"; // default to % view
 
@@ -484,6 +490,7 @@ function setPerfPer(el){activateMtb(el);perfPer=el.dataset.p;drawSKUPerf(getR())
 function setPDCPer(el){activateMtb(el);pdcPer=el.dataset.p;drawPD(getR());}
 function setPDSPer(el){activateMtb(el);pdsPer=el.dataset.p;drawPD(getR());}
 function setMMMode(el){activateMtb(el);mmMode=el.dataset.mm;drawMM(getR());}
+function setMMChanPer(el){activateMtb(el);mmChanPer=el.dataset.p;drawMMChan(getR());}
 function setMMSkuMetric(el){activateMtb(el);mmSkuMetric=el.dataset.m;drawMMbySKU(getR());}
 
 function setMMTotPer(el){activateMtb(el);mmTotPer=el.dataset.p;drawMMTotal(getR());}
@@ -758,39 +765,38 @@ function drawMMbySKU(rows){
 // ══════════════════════════════════════════════════════════════
 function drawMMTotal(rows){
   rows=rows||getR();
-  // Aggregate totals
-  var totTax=0,totMat=0;
-  rows.forEach(function(r){totTax+=r[4];totMat+=r[5];});
+  var totTax=0,totMat=0,totUnits=0;
+  rows.forEach(function(r){totTax+=r[4];totMat+=r[5];if(r[3]>0)totUnits+=r[3];});
   var totMM=totTax-totMat;
   var mmPct=totTax!==0?(totMM/totTax*100):0;
-  // Update KPI elements
-  var pctEl=document.getElementById("mm-tot-pct");
-  var absEl=document.getElementById("mm-tot-abs");
-  if(pctEl){pctEl.textContent=mmPct.toFixed(1)+"%";pctEl.style.color=mmPct>=0?"#4ade80":"#f87171";}
-  if(absEl){absEl.textContent=fr(totMM);absEl.style.color=totMM>=0?"#94a3b8":"#f87171";}
-  // Trend line (MM% over time)
+  var avgMM=totUnits>0?(totMM/totUnits):0;
+  var statEl=document.getElementById("mm-tot-stat");
+  if(statEl){statEl.innerHTML="Avg <strong style=\"color:#f1f5f9\">"+fr(avgMM)+"</strong>/unit &nbsp;&middot;&nbsp; Blended <strong style=\"color:"+(mmPct>=0?"#4ade80":"#f87171")+"\">"+mmPct.toFixed(1)+"%</strong>";}
   var grp={};
   rows.forEach(function(r){
     var k=pkey(r[0],mmTotPer);
-    if(!grp[k])grp[k]={taxable:0,matCost:0};
-    grp[k].taxable+=r[4];grp[k].matCost+=r[5];
+    if(!grp[k])grp[k]={taxable:0,matCost:0,units:0};
+    grp[k].taxable+=r[4];grp[k].matCost+=r[5];if(r[3]>0)grp[k].units+=r[3];
   });
   var lb=Object.keys(grp).sort();
-  var pctData=lb.map(function(k){
-    var t=grp[k].taxable,mc=grp[k].matCost;
-    return t!==0?Math.round((t-mc)/t*1000)/10:null;
-  });
-  var trendColor=mmPct>=0?"#4ade80":"#f87171";
-  mkC("c_mm_tot",{type:"line",data:{labels:lb.map(fmtLabel),datasets:[{
-    data:pctData,borderColor:trendColor,
-    backgroundColor:mmPct>=0?"rgba(74,222,128,0.08)":"rgba(248,113,113,0.08)",
-    fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:trendColor,borderWidth:2.5,spanGaps:true
-  }]},options:Object.assign({},OPT,{
+  var mmCostData=lb.map(function(k){return Math.round(grp[k].taxable-grp[k].matCost);});
+  var mmPctData=lb.map(function(k){var t=grp[k].taxable;return t!==0?Math.round((t-grp[k].matCost)/t*1000)/10:null;});
+  mkC("c_mm_tot",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:[
+    {type:"bar",label:"MM Cost (₹)",data:mmCostData,
+     backgroundColor:mmCostData.map(function(v){return v>=0?"rgba(74,222,128,0.7)":"rgba(248,113,113,0.7)";}),
+     yAxisID:"y",borderRadius:3,order:2},
+    {type:"line",label:"MM %",data:mmPctData,borderColor:"#f59e0b",backgroundColor:"transparent",
+     yAxisID:"y1",tension:0.3,pointRadius:3,pointBackgroundColor:"#f59e0b",borderWidth:2,order:1,spanGaps:true}
+  ]},options:Object.assign({},OPT,{
     scales:{
       x:Object.assign({},GX,{ticks:Object.assign({},GX.ticks,{maxRotation:50})}),
-      y:{grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10},callback:function(v){return v+"%";}}}
+      y:{position:"left",grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10},callback:function(v){return fr(v);}}},
+      y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:"#f59e0b",font:{size:10},callback:function(v){return v+"%";}}}
     },
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return" MM%: "+(c.parsed.y!==null?c.parsed.y.toFixed(1)+"%":"--");}}}}
+    plugins:{
+      legend:{position:"top",labels:{color:"#94a3b8",font:{size:11},boxWidth:10}},
+      tooltip:{mode:"index",intersect:false,callbacks:{label:function(c){return" "+c.dataset.label+": "+(c.dataset.yAxisID==="y1"?c.parsed.y.toFixed(1)+"%":fr(c.parsed.y));}}}
+    }
   })});
 }
 
@@ -802,44 +808,42 @@ function drawMM(rows){}
 // ══════════════════════════════════════════════════════════════
 function drawMMChan(rows){
   rows=rows||getR();
-  var chs=snap.channels||[],chTotals={};
-  chs.forEach(function(ch){chTotals[ch]={taxable:0,matCost:0};});
+  var chs=snap.channels||[];
+  var selCh=(document.getElementById("mm-chan-dd")||{}).value||"all";
+  var grp={};
   rows.forEach(function(r){
     var ch=chs[r[1]]||"?";
-    if(!chTotals[ch])chTotals[ch]={taxable:0,matCost:0};
-    chTotals[ch].taxable+=r[4];chTotals[ch].matCost+=r[5];
+    if(selCh!=="all"&&ch!==selCh)return;
+    var k=pkey(r[0],mmChanPer);
+    if(!grp[k])grp[k]={taxable:0,matCost:0,units:0};
+    grp[k].taxable+=r[4];grp[k].matCost+=r[5];if(r[3]>0)grp[k].units+=r[3];
   });
-  // Filter to channels with data, sort by MM% descending
-  var activeChs=chs.filter(function(ch){
-    return chTotals[ch]&&(chTotals[ch].taxable!==0||chTotals[ch].matCost!==0);
-  }).sort(function(a,b){
-    var pa=chTotals[a].taxable!==0?(chTotals[a].taxable-chTotals[a].matCost)/chTotals[a].taxable:0;
-    var pb=chTotals[b].taxable!==0?(chTotals[b].taxable-chTotals[b].matCost)/chTotals[b].taxable:0;
-    return pb-pa;
-  });
-  var mmCosts=activeChs.map(function(ch){return Math.round(chTotals[ch].taxable-chTotals[ch].matCost);});
-  var mmPcts=activeChs.map(function(ch){
-    var t=chTotals[ch].taxable;
-    return t!==0?Math.round((chTotals[ch].taxable-chTotals[ch].matCost)/t*1000)/10:0;
-  });
-  var barColors=activeChs.map(function(ch,i){
-    var mm=chTotals[ch].taxable-chTotals[ch].matCost;
-    return mm>=0?((CC[ch]||SC[i])+"CC"):"rgba(248,113,113,0.8)";
-  });
-  mkC("c_mm_ch",{type:"bar",data:{labels:activeChs,datasets:[
-    {type:"bar",label:"MM Cost (₹)",data:mmCosts,backgroundColor:barColors,yAxisID:"y",borderRadius:4,order:2},
-    {type:"line",label:"MM %",data:mmPcts,borderColor:"#f59e0b",backgroundColor:"transparent",
-     yAxisID:"y1",tension:0,pointRadius:8,pointBackgroundColor:mmPcts.map(function(v){return v>=0?"#f59e0b":"#f87171";}),
-     borderWidth:0,order:1,showLine:false}
+  var totTax2=0,totMat2=0,totUnits2=0;
+  Object.values(grp).forEach(function(g){totTax2+=g.taxable;totMat2+=g.matCost;totUnits2+=g.units;});
+  var totMM2=totTax2-totMat2;
+  var mmPct2=totTax2!==0?(totMM2/totTax2*100):0;
+  var avgMM2=totUnits2>0?(totMM2/totUnits2):0;
+  var cstatEl=document.getElementById("mm-chan-stat");
+  if(cstatEl){cstatEl.innerHTML="Avg <strong style=\"color:#f1f5f9\">"+fr(avgMM2)+"</strong>/unit &nbsp;&middot;&nbsp; Blended <strong style=\"color:"+(mmPct2>=0?"#4ade80":"#f87171")+"\">"+mmPct2.toFixed(1)+"%</strong>";}
+  var lb=Object.keys(grp).sort();
+  var mmCostData=lb.map(function(k){return Math.round(grp[k].taxable-grp[k].matCost);});
+  var mmPctData=lb.map(function(k){var t=grp[k].taxable;return t!==0?Math.round((t-grp[k].matCost)/t*1000)/10:null;});
+  var chanColor=selCh!=="all"?(CC[selCh]||"#6366f1"):"#6366f1";
+  mkC("c_mm_ch",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:[
+    {type:"bar",label:"MM Cost (₹)",data:mmCostData,
+     backgroundColor:mmCostData.map(function(v){return v>=0?(chanColor+"CC"):"rgba(248,113,113,0.7)";}),
+     yAxisID:"y",borderRadius:3,order:2},
+    {type:"line",label:"MM %",data:mmPctData,borderColor:"#f59e0b",backgroundColor:"transparent",
+     yAxisID:"y1",tension:0.3,pointRadius:3,pointBackgroundColor:"#f59e0b",borderWidth:2,order:1,spanGaps:true}
   ]},options:Object.assign({},OPT,{
     scales:{
-      x:Object.assign({},GX),
+      x:Object.assign({},GX,{ticks:Object.assign({},GX.ticks,{maxRotation:50})}),
       y:{position:"left",grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10},callback:function(v){return fr(v);}}},
       y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:"#f59e0b",font:{size:10},callback:function(v){return v+"%";}}}
     },
     plugins:{
       legend:{position:"top",labels:{color:"#94a3b8",font:{size:11},boxWidth:10}},
-      tooltip:{callbacks:{label:function(c){return" "+c.dataset.label+": "+(c.dataset.yAxisID==="y1"?c.parsed.y.toFixed(1)+"%":fr(c.parsed.y));}}}
+      tooltip:{mode:"index",intersect:false,callbacks:{label:function(c){return" "+c.dataset.label+": "+(c.dataset.yAxisID==="y1"?c.parsed.y.toFixed(1)+"%":fr(c.parsed.y));}}}
     }
   })});
 }
