@@ -779,11 +779,11 @@ function drawMMTotal(rows){
     grp[k].taxable+=r[4];grp[k].matCost+=r[5];if(r[3]>0)grp[k].units+=r[3];
   });
   var lb=Object.keys(grp).sort();
-  var mmCostData=lb.map(function(k){return Math.round(grp[k].taxable-grp[k].matCost);});
+  var mmUnitData=lb.map(function(k){var g=grp[k];return g.units>0?Math.round((g.taxable-g.matCost)/g.units):null;});
   var mmPctData=lb.map(function(k){var t=grp[k].taxable;return t!==0?Math.round((t-grp[k].matCost)/t*1000)/10:null;});
   mkC("c_mm_tot",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:[
-    {type:"bar",label:"MM Cost (₹)",data:mmCostData,
-     backgroundColor:mmCostData.map(function(v){return v>=0?"rgba(74,222,128,0.7)":"rgba(248,113,113,0.7)";}),
+    {type:"bar",label:"Avg MM/unit (₹)",data:mmUnitData,
+     backgroundColor:mmUnitData.map(function(v){return v===null||v>=0?"rgba(74,222,128,0.7)":"rgba(248,113,113,0.7)";}),
      yAxisID:"y",borderRadius:3,order:2},
     {type:"line",label:"MM %",data:mmPctData,borderColor:"#f59e0b",backgroundColor:"transparent",
      yAxisID:"y1",tension:0.3,pointRadius:3,pointBackgroundColor:"#f59e0b",borderWidth:2,order:1,spanGaps:true}
@@ -826,14 +826,14 @@ function drawMMChan(rows){
   var cstatEl=document.getElementById("mm-chan-stat");
   if(cstatEl){cstatEl.innerHTML="Avg <strong style=\"color:#f1f5f9\">"+fr(avgMM2)+"</strong>/unit &nbsp;&middot;&nbsp; Blended <strong style=\"color:"+(mmPct2>=0?"#4ade80":"#f87171")+"\">"+mmPct2.toFixed(1)+"%</strong>";}
   var lb=Object.keys(grp).sort();
-  var mmCostData=lb.map(function(k){return Math.round(grp[k].taxable-grp[k].matCost);});
-  var mmPctData=lb.map(function(k){var t=grp[k].taxable;return t!==0?Math.round((t-grp[k].matCost)/t*1000)/10:null;});
+  var mmUnitData2=lb.map(function(k){var g=grp[k];return g.units>0?Math.round((g.taxable-g.matCost)/g.units):null;});
+  var mmPctData2=lb.map(function(k){var t=grp[k].taxable;return t!==0?Math.round((t-grp[k].matCost)/t*1000)/10:null;});
   var chanColor=selCh!=="all"?(CC[selCh]||"#6366f1"):"#6366f1";
   mkC("c_mm_ch",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:[
-    {type:"bar",label:"MM Cost (₹)",data:mmCostData,
-     backgroundColor:mmCostData.map(function(v){return v>=0?(chanColor+"CC"):"rgba(248,113,113,0.7)";}),
+    {type:"bar",label:"Avg MM/unit (₹)",data:mmUnitData2,
+     backgroundColor:mmUnitData2.map(function(v){return v===null||v>=0?(chanColor+"CC"):"rgba(248,113,113,0.7)";}),
      yAxisID:"y",borderRadius:3,order:2},
-    {type:"line",label:"MM %",data:mmPctData,borderColor:"#f59e0b",backgroundColor:"transparent",
+    {type:"line",label:"MM %",data:mmPctData2,borderColor:"#f59e0b",backgroundColor:"transparent",
      yAxisID:"y1",tension:0.3,pointRadius:3,pointBackgroundColor:"#f59e0b",borderWidth:2,order:1,spanGaps:true}
   ]},options:Object.assign({},OPT,{
     scales:{
