@@ -271,7 +271,7 @@ module.exports = async function(req, res) {
 
       if(!channel || !model)                        continue;
       if(type.toLowerCase().includes("accessor"))   continue;
-      if(model.toLowerCase().includes("jetflo"))      continue;  // excluded per config
+      if(rawModel.toLowerCase().includes("jetflo")||model.toLowerCase().includes("jetflo")) continue; // excluded
       if(qty===0 && rev===0)                        continue;
 
       const dateStr = parseDateStr(dateRaw);
