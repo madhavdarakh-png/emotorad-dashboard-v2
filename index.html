@@ -1126,9 +1126,7 @@ function renderDealer(){
   drawDealerKPIs(rows);
   setTimeout(function(){drawDealerTrend(rows);},10);
   setTimeout(function(){drawDealerTop(rows);},40);
-  setTimeout(function(){drawDealerSplit(rows);},70);
-  setTimeout(function(){drawDealerRegion(rows);
-  drawDealerMatrix(rows);},100);
+  setTimeout(function(){drawDealerMatrix(rows);},100);
 }
 function drawDealerKPIs(rows){
   var rR=dScopeRows(rows,dKRPer),rU=dScopeRows(rows,dKUPer),rA=dScopeRows(rows,dKAPer);
