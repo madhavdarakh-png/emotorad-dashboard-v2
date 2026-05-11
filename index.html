@@ -411,7 +411,7 @@ select:focus{border-color:#3b82f6}
 
 <!-- DEALER SECTION -->
 <div class="sec-div"><span class="sec-div-lbl">Dealer &amp; Distributor Performance</span></div>
-<div class="card" style="margin-bottom:10px"><div class="chdr">DEALER MONTHLY TREND<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><div style="display:flex;gap:2px"><button class="mtb active" data-m="revenue" onclick="setDMxMetric(this)">Revenue</button><button class="mtb" data-m="units" onclick="setDMxMetric(this)">Units</button><button class="mtb" data-m="asp" onclick="setDMxMetric(this)">ASP</button></div><span id="d-mx-count" style="color:#64748b;font-size:11px;margin-left:4px"></span></div></div><div id="d-mx-tbl" style="overflow-x:auto;overflow-y:auto;max-height:480px"></div></div>
+<div class="card" style="margin-bottom:10px"><div class="chdr">DEALER MONTHLY TREND<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><div style="display:flex;gap:2px"><button class="mtb active" data-m="revenue" onclick="setDMxMetric(this)">Revenue</button><button class="mtb" data-m="units" onclick="setDMxMetric(this)">Units</button><button class="mtb" data-m="asp" onclick="setDMxMetric(this)">ASP</button></div><div style="display:flex;gap:2px"><button class="mtb active" data-v="abs" onclick="setDMxMode(this)">Absolute</button><button class="mtb" data-v="pct" onclick="setDMxMode(this)">% Change</button></div><span id="d-mx-count" style="color:#64748b;font-size:11px;margin-left:4px"></span></div></div><div id="d-mx-tbl" style="overflow-x:auto;overflow-y:auto;max-height:480px"></div></div>
 <div class="d-kpis">
   <div class="card kc"><div class="klbl">Dealer Revenue</div><div class="kv" id="dkr">--</div><div class="mt" id="dkr-per-grp"><button class="mtb active" data-p="all" onclick="setDKRPer(this)">All</button><button class="mtb" data-p="day" onclick="setDKRPer(this)">Day</button><button class="mtb" data-p="week" onclick="setDKRPer(this)">Week</button><button class="mtb" data-p="month" onclick="setDKRPer(this)">Month</button></div></div>
   <div class="card kc"><div class="klbl">Dealer Units Sold</div><div class="kv" id="dku">--</div><div class="mt" id="dku-per-grp"><button class="mtb active" data-p="all" onclick="setDKUPer(this)">All</button><button class="mtb" data-p="day" onclick="setDKUPer(this)">Day</button><button class="mtb" data-p="week" onclick="setDKUPer(this)">Week</button><button class="mtb" data-p="month" onclick="setDKUPer(this)">Month</button></div></div>
@@ -1040,6 +1040,7 @@ var dealerSnap=null;
 var dTrendPer="month",dTopPer="all",dSplitPer="all",dRegPer="all";
 var dKRPer="all",dKUPer="all",dKAPer="all",dTopMetric="revenue";
 var dMxMetric="revenue";
+var dMxMode="abs";
 function loadDealer(){
   fetch("/api/dealer",{cache:"no-store"})
     .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
@@ -1061,6 +1062,7 @@ function getDRows(){
   return dealerSnap.rows.filter(function(r){return cat==="all"||r[1]===cat;});
 }
 function setDMxMetric(el){dMxMetric=el.dataset.m;el.closest('div').querySelectorAll('.mtb').forEach(function(b){b.classList.remove('active');});el.classList.add('active');renderDealer();}
+function setDMxMode(el){dMxMode=el.dataset.v;el.closest('div').querySelectorAll('.mtb').forEach(function(b){b.classList.remove('active');});el.classList.add('active');renderDealer();}
 function drawDealerMatrix(rows){
   var el=document.getElementById('d-mx-tbl');if(!el)return;
   var cat=(document.getElementById('d-cat-filter')||{}).value||'';
@@ -1087,23 +1089,40 @@ function drawDealerMatrix(rows){
   var fU=function(v){return v?v.toLocaleString():'-';};
   var fA=function(r,u){if(!u)return'-';var v=r/u;return v>=1000?'₹'+(v/1000).toFixed(1)+'K':'₹'+Math.round(v);};
   var fM=function(m){var d=new Date(m+'-01');return d.toLocaleString('default',{month:'short',year:'2-digit'});};
-  var h='<table class="dt2" style="border-collapse:collapse;min-width:100%"><thead><tr><th style="position:sticky;left:0;z-index:2;background:#0a1628;min-width:180px;text-align:left">DEALER</th><th style="position:sticky;left:180px;z-index:2;background:#0a1628;min-width:80px;text-align:left">REGION</th>';
+  var getV=function(mv){if(!mv)return null;if(dMxMetric==='units')return mv.units;if(dMxMetric==='asp')return mv.units?mv.rev/mv.units:null;return mv.rev;};
+  var fmtAbs=function(mv){if(!mv)return{disp:'-',col:'#334155'};if(dMxMetric==='units')return{disp:fU(mv.units),col:'#e2e8f0'};if(dMxMetric==='asp')return{disp:fA(mv.rev,mv.units),col:'#e2e8f0'};return{disp:fR(mv.rev),col:'#e2e8f0'};};
+  var h='<table class="dt2" style="border-collapse:collapse;min-width:100%"><thead><tr>';
+  h+='<th style="position:sticky;left:0;z-index:2;background:#0a1628;min-width:180px;text-align:left">DEALER</th>';
+  h+='<th style="position:sticky;left:180px;z-index:2;background:#0a1628;min-width:80px;text-align:left">REGION</th>';
   mos.forEach(function(m){h+='<th style="min-width:90px;text-align:right;white-space:nowrap">'+fM(m)+'</th>';});
+  h+='<th style="min-width:100px;text-align:right;white-space:nowrap;color:#60a5fa;border-left:1px solid #1e3a5f;font-weight:700">TOTAL</th>';
   h+='</tr></thead><tbody>';
   dealers.forEach(function(e){
     var d=e[0],v=e[1];
-    h+='<tr><td style="position:sticky;left:0;background:#0d1a2e;font-weight:700;z-index:1;padding:6px 8px">'+d+'</td>';
+    var tR=0,tU=0;
+    Object.values(v.months).forEach(function(mv){tR+=mv.rev;tU+=mv.units;});
+    var tD=dMxMetric==='units'?fU(tU):dMxMetric==='asp'?fA(tR,tU):fR(tR);
+    h+='<tr>';
+    h+='<td style="position:sticky;left:0;background:#0d1a2e;font-weight:700;z-index:1;padding:6px 8px">'+d+'</td>';
     h+='<td style="position:sticky;left:180px;background:#0d1a2e;z-index:1;color:#94a3b8;padding:6px 8px">'+v.region+'</td>';
-    mos.forEach(function(m){
+    mos.forEach(function(m,i){
       var mv=v.months[m];
-      var val=mv?(dMxMetric==='units'?fU(mv.units):dMxMetric==='asp'?fA(mv.rev,mv.units):fR(mv.rev)):'-';
-      h+='<td style="text-align:right;padding:6px 8px;color:'+(mv?'#e2e8f0':'#334155')+'">'+val+'</td>';
+      if(dMxMode==='pct'&&i>0){
+        var cur=getV(mv),prev=getV(v.months[mos[i-1]]);
+        if(cur===null||prev===null||!prev){h+='<td style="text-align:right;padding:6px 8px;color:#334155">-</td>';}
+        else{var p=((cur-prev)/Math.abs(prev)*100),s=p>=0?'+':'',c=p>=0?'#34d399':'#f87171';h+='<td style="text-align:right;padding:6px 8px;color:'+c+'">'+s+p.toFixed(1)+'%</td>';}
+      }else{
+        var ab=fmtAbs(mv);
+        h+='<td style="text-align:right;padding:6px 8px;color:'+ab.col+'">'+ab.disp+'</td>';
+      }
     });
+    h+='<td style="text-align:right;padding:6px 8px;color:#60a5fa;font-weight:700;border-left:1px solid #1e3a5f">'+tD+'</td>';
     h+='</tr>';
   });
   h+='</tbody></table>';
   el.innerHTML=h;
 }
+
 function renderDealer(){
   if(!dealerSnap)return;
   var rows=getDRows();
