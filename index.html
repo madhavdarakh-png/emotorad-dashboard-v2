@@ -1064,7 +1064,7 @@ function setDMxMetric(el){dMxMetric=el.dataset.m;el.closest('div').querySelector
 function drawDealerMatrix(rows){
   var el=document.getElementById('d-mx-tbl');if(!el)return;
   var cat=(document.getElementById('d-cat-filter')||{}).value||'';
-  var filtered=rows.filter(function(r){return !cat||r[1]===cat;});
+  var filtered=rows.filter(function(r){return !cat||cat==='all'||r[1]===cat;});
   var months=new Set();var map={};
   filtered.forEach(function(r){
     var mo=r[0].slice(0,7);months.add(mo);
