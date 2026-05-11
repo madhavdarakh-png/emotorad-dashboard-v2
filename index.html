@@ -421,7 +421,7 @@ select:focus{border-color:#3b82f6}
 
 <div class="row r2">
   <div class="card"><div class="chdr">Dealer Revenue Trend<div class="mt" id="dt-per-grp"><button class="mtb active" data-p="month" onclick="setDTrendPer(this)">Month</button></div></div><div class="cw h280"><canvas id="d-trend-c"></canvas></div></div>
-  <div class="card"><div class="chdr">Top Dealers<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><div class="mt" id="dtop-per-grp"><button class="mtb active" data-p="month" onclick="setDTopPer(this)">Month</button></div><div class="mt" id="dtop-metric-grp"><button class="mtb active" data-m="revenue" onclick="setDTopMetric(this)">Revenue</button><button class="mtb" data-m="units" onclick="setDTopMetric(this)">Units</button><button class="mtb" data-m="asp" onclick="setDTopMetric(this)">ASP</button></div></div></div><div class="tscroll" id="d-top-tbl" style="max-height:320px"></div></div>
+  <div class="card"><div class="chdr">Top Dealers<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><div class="mt" id="dtop-per-grp"><button class="mtb active" data-p="month" onclick="setDTopPer(this)">Month</button><select id="d-top-mo-filter" onchange="renderDealer()" style="font-size:11px;margin-left:2px;background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:3px;padding:2px 4px"><option value="all">All Months</option></select></div><div class="mt" id="dtop-metric-grp"><button class="mtb active" data-m="revenue" onclick="setDTopMetric(this)">Revenue</button><button class="mtb" data-m="units" onclick="setDTopMetric(this)">Units</button><button class="mtb" data-m="asp" onclick="setDTopMetric(this)">ASP</button></div></div></div><div class="tscroll" id="d-top-tbl" style="max-height:320px"></div></div>
 </div>
 </div><!-- /con -->
 
@@ -1161,7 +1161,10 @@ function drawDealerTrend(rows){
   }})});
 }
 function drawDealerTop(rows){
-  var scoped=dScopeRows(rows,dTopPer);
+  var moSel=document.getElementById('d-top-mo-filter');if(moSel&&moSel.options.length<=1&&dealerSnap){var mos2=new Set();dealerSnap.rows.forEach(function(r){mos2.add(r[0].slice(0,7));});Array.from(mos2).sort().forEach(function(m){var o=document.createElement('option');o.value=m;o.textContent=fmtLabel(m);moSel.appendChild(o);});}
+var selMo=moSel?moSel.value:'all';
+var rows2=selMo==='all'?rows:rows.filter(function(r){return r[0].slice(0,7)===selMo;});
+var scoped=dScopeRows(rows2,dTopPer);
   var map={};
   scoped.forEach(function(r){
     var name=r[2]||"(unknown)";
