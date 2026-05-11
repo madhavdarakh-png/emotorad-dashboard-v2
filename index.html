@@ -411,20 +411,17 @@ select:focus{border-color:#3b82f6}
 
 <!-- DEALER SECTION -->
 <div class="sec-div"><span class="sec-div-lbl">Dealer &amp; Distributor Performance</span></div>
-<div class="card" style="margin-bottom:10px"><div class="chdr">DEALER MONTHLY TREND<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><div style="display:flex;gap:2px"><button class="mtb active" data-m="revenue" onclick="setDMxMetric(this)">Revenue</button><button class="mtb" data-m="units" onclick="setDMxMetric(this)">Units</button><button class="mtb" data-m="asp" onclick="setDMxMetric(this)">ASP</button></div><div style="display:flex;gap:2px"><button class="mtb active" data-v="abs" onclick="setDMxMode(this)">Absolute</button><button class="mtb" data-v="pct" onclick="setDMxMode(this)">% Change</button></div><span id="d-mx-count" style="color:#64748b;font-size:11px;margin-left:4px"></span></div></div><div id="d-mx-tbl" style="overflow-x:auto;overflow-y:auto;max-height:480px"></div></div>
+
 <div class="d-kpis">
   <div class="card kc"><div class="klbl">Dealer Revenue</div><div class="kv" id="dkr">--</div><div class="mt" id="dkr-per-grp"><button class="mtb active" data-p="all" onclick="setDKRPer(this)">All</button><button class="mtb" data-p="day" onclick="setDKRPer(this)">Day</button><button class="mtb" data-p="week" onclick="setDKRPer(this)">Week</button><button class="mtb" data-p="month" onclick="setDKRPer(this)">Month</button></div></div>
   <div class="card kc"><div class="klbl">Dealer Units Sold</div><div class="kv" id="dku">--</div><div class="mt" id="dku-per-grp"><button class="mtb active" data-p="all" onclick="setDKUPer(this)">All</button><button class="mtb" data-p="day" onclick="setDKUPer(this)">Day</button><button class="mtb" data-p="week" onclick="setDKUPer(this)">Week</button><button class="mtb" data-p="month" onclick="setDKUPer(this)">Month</button></div></div>
   <div class="card kc"><div class="klbl">Dealer ASP</div><div class="kv" id="dka">--</div><div class="mt" id="dka-per-grp"><button class="mtb active" data-p="all" onclick="setDKAPer(this)">All</button><button class="mtb" data-p="day" onclick="setDKAPer(this)">Day</button><button class="mtb" data-p="week" onclick="setDKAPer(this)">Week</button><button class="mtb" data-p="month" onclick="setDKAPer(this)">Month</button></div></div>
 </div>
+<div class="card" style="margin-bottom:10px"><div class="chdr">DEALER MONTHLY TREND<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><div style="display:flex;gap:2px"><button class="mtb active" data-m="revenue" onclick="setDMxMetric(this)">Revenue</button><button class="mtb" data-m="units" onclick="setDMxMetric(this)">Units</button><button class="mtb" data-m="asp" onclick="setDMxMetric(this)">ASP</button></div><div style="display:flex;gap:2px"><button class="mtb active" data-v="abs" onclick="setDMxMode(this)">Absolute</button><button class="mtb" data-v="pct" onclick="setDMxMode(this)">% Change</button></div><span id="d-mx-count" style="color:#64748b;font-size:11px;margin-left:4px"></span></div></div><div id="d-mx-tbl" style="overflow-x:auto;overflow-y:auto;max-height:480px"></div></div>
 
 <div class="row r2">
   <div class="card"><div class="chdr">Dealer Revenue Trend<div class="mt" id="dt-per-grp"><button class="mtb" data-p="day" onclick="setDTrendPer(this)">Day</button><button class="mtb" data-p="week" onclick="setDTrendPer(this)">Week</button><button class="mtb active" data-p="month" onclick="setDTrendPer(this)">Month</button></div></div><div class="cw h280"><canvas id="d-trend-c"></canvas></div></div>
   <div class="card"><div class="chdr">Top Dealers<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="d-cat-filter" onchange="renderDealer()" style="font-size:11px"><option value="all">All Types</option><option value="Dealer">Dealer</option><option value="Distributor">Distributor</option></select><div class="mt" id="dtop-per-grp"><button class="mtb active" data-p="all" onclick="setDTopPer(this)">All</button><button class="mtb" data-p="day" onclick="setDTopPer(this)">Day</button><button class="mtb" data-p="week" onclick="setDTopPer(this)">Week</button><button class="mtb" data-p="month" onclick="setDTopPer(this)">Month</button></div><div class="mt" id="dtop-metric-grp"><button class="mtb active" data-m="revenue" onclick="setDTopMetric(this)">Revenue</button><button class="mtb" data-m="units" onclick="setDTopMetric(this)">Units</button><button class="mtb" data-m="asp" onclick="setDTopMetric(this)">ASP</button></div></div></div><div class="tscroll" id="d-top-tbl" style="max-height:320px"></div></div>
-</div>
-<div class="row r2">
-  <div class="card"><div class="chdr">Dealer vs Distributor Split<div class="mt" id="dsplit-per-grp"><button class="mtb active" data-p="all" onclick="setDSplitPer(this)">All</button><button class="mtb" data-p="day" onclick="setDSplitPer(this)">Day</button><button class="mtb" data-p="week" onclick="setDSplitPer(this)">Week</button><button class="mtb" data-p="month" onclick="setDSplitPer(this)">Month</button></div></div><div class="cw h280"><canvas id="d-split-c"></canvas></div></div>
-  <div class="card"><div class="chdr">Revenue by Region<div class="mt" id="dreg-per-grp"><button class="mtb active" data-p="all" onclick="setDRegPer(this)">All</button><button class="mtb" data-p="day" onclick="setDRegPer(this)">Day</button><button class="mtb" data-p="week" onclick="setDRegPer(this)">Week</button><button class="mtb" data-p="month" onclick="setDRegPer(this)">Month</button></div></div><div class="cw h280"><canvas id="d-region-c"></canvas></div></div>
 </div>
 </div><!-- /con -->
 
@@ -1145,19 +1142,25 @@ function drawDealerKPIs(rows){
 }
 
 function drawDealerTrend(rows){
-  var grp={};
-  rows.forEach(function(r){var k=pkey(r[0],dTrendPer);if(!grp[k])grp[k]={rev:0,units:0};grp[k].rev+=r[7];grp[k].units+=r[5];});
-  var lb=Object.keys(grp).sort();
-  mkC("d-trend-c",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:[
-    {type:"bar",label:"Units",data:lb.map(function(k){return grp[k].units;}),backgroundColor:"rgba(99,102,241,0.7)",yAxisID:"y",borderRadius:3,order:2},
-    {type:"line",label:"Revenue",data:lb.map(function(k){return Math.round(grp[k].rev);}),borderColor:"#f59e0b",backgroundColor:"transparent",yAxisID:"y1",tension:0.3,pointRadius:3,borderWidth:2,order:1}
-  ]},options:Object.assign({},OPT,{scales:{
-    x:Object.assign({},GX,{ticks:Object.assign({},GX.ticks,{maxRotation:50})}),
-    y:{position:"left",grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10}}},
-    y1:{position:"right",grid:{drawOnChartArea:false},ticks:{color:"#f59e0b",font:{size:10},callback:function(v){return fr(v);}}}
-  },plugins:{legend:{position:"top",labels:{color:"#94a3b8",font:{size:11},boxWidth:10}},
-    tooltip:{mode:"index",intersect:false,callbacks:{label:function(c){return" "+c.dataset.label+": "+(c.dataset.yAxisID==="y1"?fr(c.parsed.y):c.parsed.y.toLocaleString());}}}}
-  })});
+  var regionMap={},periods=new Set();
+  rows.forEach(function(r){
+    var k=pkey(r[0],dTrendPer);
+    var reg=r[3]||'Unknown';
+    periods.add(k);
+    if(!regionMap[reg])regionMap[reg]={};
+    if(!regionMap[reg][k])regionMap[reg][k]=0;
+    regionMap[reg][k]+=r[7];
+  });
+  var lb=Array.from(periods).sort();
+  var regions=Object.keys(regionMap).sort();
+  var pal=['rgba(99,102,241,0.85)','rgba(16,185,129,0.85)','rgba(245,158,11,0.85)','rgba(239,68,68,0.85)','rgba(139,92,246,0.85)','rgba(14,165,233,0.85)','rgba(234,179,8,0.85)','rgba(248,113,113,0.85)'];
+  var datasets=regions.map(function(reg,i){
+    return {type:'bar',label:reg,data:lb.map(function(k){return regionMap[reg][k]||0;}),backgroundColor:pal[i%pal.length],stack:'rev',borderRadius:2};
+  });
+  mkC("d-trend-c",{type:"bar",data:{labels:lb.map(fmtLabel),datasets:datasets},options:Object.assign({},OPT,{scales:{
+    x:Object.assign({},GX,{stacked:true,ticks:Object.assign({},GX.ticks,{maxRotation:50})}),
+    y:{stacked:true,position:"left",grid:{color:"#1e293b"},ticks:{color:"#64748b",font:{size:10},callback:function(v){return fr(v);}}}
+  }})});
 }
 function drawDealerTop(rows){
   var scoped=dScopeRows(rows,dTopPer);
