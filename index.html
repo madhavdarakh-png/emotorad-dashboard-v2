@@ -1111,7 +1111,7 @@ function drawDealerMatrix(rows){
         var cur=getV(mv),prev=getV(v.months[mos[i-1]]);
         if(cur===null||prev===null||!prev){h+='<td style="text-align:right;padding:6px 8px;color:#334155">-</td>';}
         else{var p=((cur-prev)/Math.abs(prev)*100),s=p>=0?'+':'',c=p>=0?'#34d399':'#f87171';h+='<td style="text-align:right;padding:6px 8px;color:'+c+'">'+s+p.toFixed(1)+'%</td>';}
-      }else{
+      }else if(dMxMode==='pct'&&i===0){h+='<td style="text-align:right;padding:6px 8px;color:#334155">-</td>';}else{
         var ab=fmtAbs(mv);
         h+='<td style="text-align:right;padding:6px 8px;color:'+ab.col+'">'+ab.disp+'</td>';
       }
