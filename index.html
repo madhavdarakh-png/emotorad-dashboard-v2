@@ -411,6 +411,7 @@ select:focus{border-color:#3b82f6}
 
 <!-- DEALER SECTION -->
 <div class="sec-div"><span class="sec-div-lbl">Dealer &amp; Distributor Performance</span></div>
+<div class="card" style="margin-bottom:10px"><div class="chdr">DEALER MONTHLY TREND<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><div style="display:flex;gap:2px"><button class="mtb active" data-m="revenue" onclick="setDMxMetric(this)">Revenue</button><button class="mtb" data-m="units" onclick="setDMxMetric(this)">Units</button><button class="mtb" data-m="asp" onclick="setDMxMetric(this)">ASP</button></div><span id="d-mx-count" style="color:#64748b;font-size:11px;margin-left:4px"></span></div></div><div id="d-mx-tbl" style="overflow-x:auto;overflow-y:auto;max-height:480px"></div></div>
 <div class="d-kpis">
   <div class="card kc"><div class="klbl">Dealer Revenue</div><div class="kv" id="dkr">--</div><div class="mt" id="dkr-per-grp"><button class="mtb active" data-p="all" onclick="setDKRPer(this)">All</button><button class="mtb" data-p="day" onclick="setDKRPer(this)">Day</button><button class="mtb" data-p="week" onclick="setDKRPer(this)">Week</button><button class="mtb" data-p="month" onclick="setDKRPer(this)">Month</button></div></div>
   <div class="card kc"><div class="klbl">Dealer Units Sold</div><div class="kv" id="dku">--</div><div class="mt" id="dku-per-grp"><button class="mtb active" data-p="all" onclick="setDKUPer(this)">All</button><button class="mtb" data-p="day" onclick="setDKUPer(this)">Day</button><button class="mtb" data-p="week" onclick="setDKUPer(this)">Week</button><button class="mtb" data-p="month" onclick="setDKUPer(this)">Month</button></div></div>
@@ -1038,6 +1039,7 @@ function drawPD(rows){
 var dealerSnap=null;
 var dTrendPer="month",dTopPer="all",dSplitPer="all",dRegPer="all";
 var dKRPer="all",dKUPer="all",dKAPer="all",dTopMetric="revenue";
+var dMxMetric="revenue";
 function loadDealer(){
   fetch("/api/dealer",{cache:"no-store"})
     .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
@@ -1058,6 +1060,50 @@ function getDRows(){
   var cat=cf?cf.value:"all";
   return dealerSnap.rows.filter(function(r){return cat==="all"||r[1]===cat;});
 }
+function setDMxMetric(el){dMxMetric=el.dataset.m;el.closest('div').querySelectorAll('.mtb').forEach(function(b){b.classList.remove('active');});el.classList.add('active');renderDealer();}
+function drawDealerMatrix(rows){
+  var el=document.getElementById('d-mx-tbl');if(!el)return;
+  var cat=(document.getElementById('d-cat-filter')||{}).value||'';
+  var filtered=rows.filter(function(r){return !cat||r[1]===cat;});
+  var months=new Set();var map={};
+  filtered.forEach(function(r){
+    var mo=r[0].slice(0,7);months.add(mo);
+    var d=r[2];if(!d)return;
+    if(!map[d])map[d]={region:r[3],months:{}};
+    if(!map[d].months[mo])map[d].months[mo]={rev:0,units:0};
+    map[d].months[mo].rev+=r[7];map[d].months[mo].units+=r[5];
+  });
+  var mos=Array.from(months).sort();
+  var dealers=Object.entries(map);
+  dealers.sort(function(a,b){
+    var ta=Object.values(a[1].months).reduce(function(s,v){return s+v.rev;},0);
+    var tb=Object.values(b[1].months).reduce(function(s,v){return s+v.rev;},0);
+    return tb-ta;
+  });
+  var cnt=document.getElementById('d-mx-count');
+  if(cnt)cnt.textContent=dealers.length+' dealers · '+mos.length+' months';
+  if(!dealers.length){el.innerHTML='<p style="color:#64748b;padding:12px">No data</p>';return;}
+  var fR=function(v){if(!v)return'-';if(v>=10000000)return'₹'+(v/10000000).toFixed(2)+'Cr';if(v>=100000)return'₹'+(v/100000).toFixed(1)+'L';return'₹'+Math.round(v).toLocaleString();};
+  var fU=function(v){return v?v.toLocaleString():'-';};
+  var fA=function(r,u){if(!u)return'-';var v=r/u;return v>=1000?'₹'+(v/1000).toFixed(1)+'K':'₹'+Math.round(v);};
+  var fM=function(m){var d=new Date(m+'-01');return d.toLocaleString('default',{month:'short',year:'2-digit'});};
+  var h='<table class="dt2" style="border-collapse:collapse;min-width:100%"><thead><tr><th style="position:sticky;left:0;z-index:2;background:#0a1628;min-width:180px;text-align:left">DEALER</th><th style="position:sticky;left:180px;z-index:2;background:#0a1628;min-width:80px;text-align:left">REGION</th>';
+  mos.forEach(function(m){h+='<th style="min-width:90px;text-align:right;white-space:nowrap">'+fM(m)+'</th>';});
+  h+='</tr></thead><tbody>';
+  dealers.forEach(function(e){
+    var d=e[0],v=e[1];
+    h+='<tr><td style="position:sticky;left:0;background:#0d1a2e;font-weight:700;z-index:1;padding:6px 8px">'+d+'</td>';
+    h+='<td style="position:sticky;left:180px;background:#0d1a2e;z-index:1;color:#94a3b8;padding:6px 8px">'+v.region+'</td>';
+    mos.forEach(function(m){
+      var mv=v.months[m];
+      var val=mv?(dMxMetric==='units'?fU(mv.units):dMxMetric==='asp'?fA(mv.rev,mv.units):fR(mv.rev)):'-';
+      h+='<td style="text-align:right;padding:6px 8px;color:'+(mv?'#e2e8f0':'#334155')+'">'+val+'</td>';
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
 function renderDealer(){
   if(!dealerSnap)return;
   var rows=getDRows();
@@ -1065,7 +1111,8 @@ function renderDealer(){
   setTimeout(function(){drawDealerTrend(rows);},10);
   setTimeout(function(){drawDealerTop(rows);},40);
   setTimeout(function(){drawDealerSplit(rows);},70);
-  setTimeout(function(){drawDealerRegion(rows);},100);
+  setTimeout(function(){drawDealerRegion(rows);
+  drawDealerMatrix(rows);},100);
 }
 function drawDealerKPIs(rows){
   var rR=dScopeRows(rows,dKRPer),rU=dScopeRows(rows,dKUPer),rA=dScopeRows(rows,dKAPer);
