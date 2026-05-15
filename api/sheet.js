@@ -14,7 +14,7 @@ const SCOPES         = "https://www.googleapis.com/auth/spreadsheets.readonly";
 // ══════════════════════════════════════════════════════════════════
 const CANONICAL_SKUS = [
   "Dope", "X1", "X2", "ST-X", "Legend 07", "X3",
-  "Viper", "T-Rex Air", "T-Rex Pro", "Doodle", "EMX+", "Cargo G1", "Lil E",
+  "Viper", "T-Rex Air", "T-Rex Pro", "Doodle", "T Rex+", "Cargo G1", "Lil E",
   "Ranger", "T-Rex Smart"
 ];
 
@@ -49,7 +49,7 @@ const SKU_NORM = {
   // Doodle (all variants)
   "doodle": "Doodle", "doodle v4": "Doodle", "doodle v3": "Doodle",
   // EMX+
-  "t rex+": "EMX+", "t-rex+": "EMX+", "emx+": "EMX+",
+  "t rex+": "T Rex+", "t-rex+": "T Rex+", "emx+": "T Rex+",
   // Cargo G1
   "cargo": "Cargo G1", "g1": "Cargo G1", "cargo g1": "Cargo G1",
   // Lil E
@@ -112,7 +112,7 @@ const MATERIAL_COST_PER_SKU = {
   "T-Rex Pro":   31484,
   "T-Rex Smart": 20951,
   "Doodle":      32803,
-  "EMX+":        27150,
+  "T Rex+":        27150,
   "Cargo G1":    32066,
   "Lil E":       7566,
   "Ranger":      34309,
